@@ -16,6 +16,8 @@ class _MyAppState extends State<MyApp> {
 
   // Need to create a list of itemCards
 
+  List<ItemCard> itemList = [];
+
   String? _title;
   String? _imageURL;
   String? _price;
@@ -50,10 +52,18 @@ class _MyAppState extends State<MyApp> {
       NetworkCalls networkCalls = NetworkCalls(url: url);
       await networkCalls.getResponseBody();
 
+      // create a item Model
+      Item item = Item(
+          title: networkCalls.title, imageURL: networkCalls.urlOfImage, price: networkCalls.price);
+
+      // create a ItemCard from the model
+      ItemCard itemCard = ItemCard(item: item);
+
+      print('length of itemList: ${itemList.length}');
+
+      // add the ItemCard to the ItemCard list
       setState(() {
-        _title = networkCalls.title;
-        _imageURL = networkCalls.urlOfImage;
-        _price = networkCalls.price;
+        itemList.add(itemCard);
       });
     } else {
       print('Value passed to getHeader was null...');
@@ -68,22 +78,7 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Baskit'),
         ),
-        body: Column(
-          children: [
-            Card(
-              margin: EdgeInsets.all(15.0),
-              child: ListTile(
-                leading: _imageURL == null ? Text('Wait') : Image.network(_imageURL!),
-                title: Text(
-                  _title ?? 'no title yet',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(_price ?? 'no price yet'),
-              ),
-            ),
-          ],
-        ),
+        body: Column(children: itemList),
       ),
     );
   }
@@ -102,6 +97,17 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Card(
+      margin: EdgeInsets.all(10.0),
+      child: ListTile(
+        leading: Image.network(item.imageURL),
+        title: Text(
+          item.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(item.price),
+      ),
+    );
   }
 }
