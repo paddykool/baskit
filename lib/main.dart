@@ -1,11 +1,21 @@
+import 'package:baskit/boxes.dart';
 import 'package:baskit/parse_document.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'models/item.dart';
 import 'network.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(ItemAdapter());
+  await Hive.openBox<Item>('items');
+
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -53,15 +63,23 @@ class _MyAppState extends State<MyApp> {
     Item item = Item(
         title: parseDocument.title, imageURL: parseDocument.imageURL, price: parseDocument.price);
 
-    // create a ItemCard from the model
-    ItemCard itemCard = ItemCard(item: item);
+    // // create a ItemCard from the model
+    // ItemCard itemCard = ItemCard(item: item);
 
-    // add the ItemCard to the ItemCard list
-    setState(() {
-      itemList.add(itemCard);
-    });
+    // // add the ItemCard to the ItemCard list
+    // setState(() {
+    //   itemList.add(itemCard);
+    // });
+    // print('length of itemList: ${itemList.length}');
 
-    print('length of itemList: ${itemList.length}');
+    final box = Boxes.getItems();
+    box.add(item);
+  }
+
+  Future<void> clearItemBox() async {
+    print('inside clearItemBox()');
+    final box = Boxes.getItems();
+    await box.clear();
   }
 
   @override
@@ -72,14 +90,53 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Baskit'),
         ),
-        body: Column(children: itemList),
+        body: ValueListenableBuilder<Box<Item>>(
+          valueListenable: Boxes.getItems().listenable(),
+          builder: (context, box, _) {
+            final items = box.values.toList().cast<Item>();
+            return buildItemCardList(items);
+          },
+        ),
       ),
     );
+  }
+
+  //take list of item model objcts
+  // and return a list view of the cards
+  Widget buildItemCardList(List<Item> items) {
+    if (items.isEmpty) {
+      return Center(
+        child: Text('No items yet'),
+      );
+    } else {
+      return Column(
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              clearItemBox();
+            },
+            child: Text('Clear list'),
+          ),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemCount: items.length,
+              itemBuilder: (BuildContext context, int index) {
+                final item = items[index];
+                return ItemCard(item: item);
+              },
+            ),
+          )
+        ],
+      );
+    }
   }
 
   @override
   void dispose() {
     _intentDataStreamSubscription!.cancel();
+    Hive.box('items').close();
     super.dispose();
   }
 }
