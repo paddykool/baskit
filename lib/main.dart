@@ -1,8 +1,9 @@
+import 'package:baskit/parse_document.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'models/item.dart';
-import 'network_calls.dart';
+import 'network.dart';
 
 void main() => runApp(MyApp());
 
@@ -15,12 +16,7 @@ class _MyAppState extends State<MyApp> {
   StreamSubscription? _intentDataStreamSubscription;
 
   // Need to create a list of itemCards
-
   List<ItemCard> itemList = [];
-
-  String? _title;
-  String? _imageURL;
-  String? _price;
 
   @override
   void initState() {
@@ -47,27 +43,25 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getItemDetails(String? url) async {
-    if (url != null) {
-      NetworkCalls networkCalls = NetworkCalls(url: url);
-      await networkCalls.getResponseBody();
+  void getItemDetails(String url) async {
+    NetworkCalls networkCalls = NetworkCalls(url: url);
+    var document = await networkCalls.getResponseBody();
 
-      // create a item Model
-      Item item = Item(
-          title: networkCalls.title, imageURL: networkCalls.urlOfImage, price: networkCalls.price);
+    ParseDocument parseDocument = ParseDocument(document: document);
 
-      // create a ItemCard from the model
-      ItemCard itemCard = ItemCard(item: item);
+    // create a item Model
+    Item item = Item(
+        title: parseDocument.title, imageURL: parseDocument.imageURL, price: parseDocument.price);
 
-      print('length of itemList: ${itemList.length}');
+    // create a ItemCard from the model
+    ItemCard itemCard = ItemCard(item: item);
 
-      // add the ItemCard to the ItemCard list
-      setState(() {
-        itemList.add(itemCard);
-      });
-    } else {
-      print('Value passed to getHeader was null...');
-    }
+    // add the ItemCard to the ItemCard list
+    setState(() {
+      itemList.add(itemCard);
+    });
+
+    print('length of itemList: ${itemList.length}');
   }
 
   @override
