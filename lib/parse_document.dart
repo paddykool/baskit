@@ -20,6 +20,7 @@ class ParseDocument {
     print('Number of images found: ${images.length}');
 
     // find the image with the same alt as the title
+    // TODO add error condition here
     Element? productImage = images.firstWhere((image) {
       Map<Object, String> attributeMap = image.attributes;
 
