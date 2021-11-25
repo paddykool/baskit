@@ -1,8 +1,9 @@
 import 'package:baskit/boxes.dart';
-import 'package:baskit/parse_document.dart';
+import 'package:baskit/parse_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'item_screen.dart';
 import 'models/item.dart';
 import 'network.dart';
 import 'package:hive/hive.dart';
@@ -23,57 +24,82 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  int parserIndex = 0;
   StreamSubscription? _intentDataStreamSubscription;
+  String? passedUrl;
 
-  // Need to create a list of itemCards
-  List<ItemCard> itemList = [];
+  void setParserTop() {
+    setState(() {
+      parserIndex = 1;
+    });
+  }
+
+  void setItemsTop() {
+    setState(() {
+      print("calling setItemsTop.....");
+      parserIndex = 0;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
 
     // For sharing or opening urls/text coming from outside the app while the app is in the memory
-    _intentDataStreamSubscription = ReceiveSharingIntent.getTextStream().listen((String passedURL) {
+    _intentDataStreamSubscription = ReceiveSharingIntent.getTextStream().listen((String url) {
       print('inside "ReceiveSharingIntent.getTextStream()"...');
-      print('Value passed in from getTextStream() was $passedURL... calling getHeader()');
-      getItemDetails(passedURL);
+      print('Value passed in from getTextStream() was $url... Setting passedUrl variable');
+      passedUrl = url;
+      setParserTop();
+      // getItemDetails(passedURL);
     }, onError: (err) {
       print("getLinkStream error: $err");
     });
 
     // For sharing or opening urls/text coming from outside the app while the app is closed
-    ReceiveSharingIntent.getInitialText().then((String? value) {
+    ReceiveSharingIntent.getInitialText().then((String? url) {
       print('inside "ReceiveSharingIntent.getInitialText()"...');
-      if (value != null) {
-        print('Value passed in from getInitialText() was $value... calling getItemDetails()');
-        getItemDetails(value);
+      if (url != null) {
+        print('Value passed in from getInitialText() was $url... Setting passedUrl variable');
+        passedUrl = url;
+        setParserTop();
+        // getItemDetails(value);
       } else {
         print('Value passed in from getInitialText() was null');
       }
     });
   }
 
-  void getItemDetails(String url) async {
-    NetworkCalls networkCalls = NetworkCalls(url: url);
-    var document = await networkCalls.getResponseBody();
-
-    ParseDocument parseDocument = ParseDocument(document: document);
-
-    // create a item Model
-    Item item = Item(
-        title: parseDocument.title, imageURL: parseDocument.imageURL, price: parseDocument.price);
-
-    // // create a ItemCard from the model
-    // ItemCard itemCard = ItemCard(item: item);
-
-    // // add the ItemCard to the ItemCard list
+  Future<void> getItemDetails(String url) async {
     // setState(() {
-    //   itemList.add(itemCard);
+    //   print('Setting openedBySharing = 1');
+    //   openedBySharing = 1;
     // });
-    // print('length of itemList: ${itemList.length}');
+
+    NetworkCalls networkCalls = NetworkCalls(url: url);
+    var jsonData = await networkCalls.getJsonResponseBodySTUB();
+
+    // print(jsonData);
+    // print(jsonData['title']);
+    // print(jsonData['imageURL']);
+    // print(jsonData['price']);
+
+    // var document = await networkCalls.getResponseBody();
+
+    // ParseDocument parseDocument = ParseDocument(document: document);
+    //
+    // create a item Model
+    Item item =
+        Item(title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
 
     final box = Boxes.getItems();
     box.add(item);
+
+    // // Reset openedBySharing ???
+    // setState(() {
+    //   print('Setting openedBySharing = false');
+    //   openedBySharing = 0;
+    // });
   }
 
   Future<void> clearItemBox() async {
@@ -84,24 +110,40 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    const textStyleBold = const TextStyle(fontWeight: FontWeight.bold);
+    print('This is the value of parserIndex at the start of the build method...');
+    print('parserIndex: $parserIndex');
+    print('passedUrl: $passedUrl');
+
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Baskit'),
-        ),
-        body: ValueListenableBuilder<Box<Item>>(
-          valueListenable: Boxes.getItems().listenable(),
-          builder: (context, box, _) {
-            final items = box.values.toList().cast<Item>();
-            return buildItemCardList(items);
-          },
-        ),
-      ),
+          appBar: AppBar(
+            title: const Text('Baskit'),
+          ),
+          body: passedUrl == null
+              ? ItemScreen()
+              : IndexedStack(
+                  index: parserIndex,
+                  children: [
+                    ItemScreen(),
+                    ParseScreen(url: passedUrl!, setStackIndexCallback: setItemsTop),
+                  ],
+                )
+
+          // openedBySharing == 0
+
+          // ? Text("Balls")
+          // : ValueListenableBuilder<Box<Item>>(
+          //     valueListenable: Boxes.getItems().listenable(),
+          //     builder: (context, box, _) {
+          //       final items = box.values.toList().cast<Item>();
+          //       return buildItemCardList(items);
+          //     },
+          //   ),
+          ),
     );
   }
 
-  //take list of item model objcts
+  // take list of item model objcts
   // and return a list view of the cards
   Widget buildItemCardList(List<Item> items) {
     if (items.isEmpty) {
