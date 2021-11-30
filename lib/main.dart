@@ -24,20 +24,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  int parserIndex = 0;
   StreamSubscription? _intentDataStreamSubscription;
+  bool openedBySharing = false;
   String? passedUrl;
 
-  void setParserTop() {
+  void setOpenedBySharing({required bool value}) {
     setState(() {
-      parserIndex = 1;
-    });
-  }
-
-  void setItemsTop() {
-    setState(() {
-      print("calling setItemsTop.....");
-      parserIndex = 0;
+      openedBySharing = value;
     });
   }
 
@@ -49,9 +42,9 @@ class _MyAppState extends State<MyApp> {
     _intentDataStreamSubscription = ReceiveSharingIntent.getTextStream().listen((String url) {
       print('inside "ReceiveSharingIntent.getTextStream()"...');
       print('Value passed in from getTextStream() was $url... Setting passedUrl variable');
+      setOpenedBySharing(value: true);
       passedUrl = url;
-      setParserTop();
-      // getItemDetails(passedURL);
+      // getItemDetails(url);
     }, onError: (err) {
       print("getLinkStream error: $err");
     });
@@ -61,45 +54,13 @@ class _MyAppState extends State<MyApp> {
       print('inside "ReceiveSharingIntent.getInitialText()"...');
       if (url != null) {
         print('Value passed in from getInitialText() was $url... Setting passedUrl variable');
+        setOpenedBySharing(value: true);
         passedUrl = url;
-        setParserTop();
-        // getItemDetails(value);
+        // getItemDetails(url);
       } else {
         print('Value passed in from getInitialText() was null');
       }
     });
-  }
-
-  Future<void> getItemDetails(String url) async {
-    // setState(() {
-    //   print('Setting openedBySharing = 1');
-    //   openedBySharing = 1;
-    // });
-
-    NetworkCalls networkCalls = NetworkCalls(url: url);
-    var jsonData = await networkCalls.getJsonResponseBodySTUB();
-
-    // print(jsonData);
-    // print(jsonData['title']);
-    // print(jsonData['imageURL']);
-    // print(jsonData['price']);
-
-    // var document = await networkCalls.getResponseBody();
-
-    // ParseDocument parseDocument = ParseDocument(document: document);
-    //
-    // create a item Model
-    Item item =
-        Item(title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
-
-    final box = Boxes.getItems();
-    box.add(item);
-
-    // // Reset openedBySharing ???
-    // setState(() {
-    //   print('Setting openedBySharing = false');
-    //   openedBySharing = 0;
-    // });
   }
 
   Future<void> clearItemBox() async {
@@ -110,36 +71,21 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print('This is the value of parserIndex at the start of the build method...');
-    print('parserIndex: $parserIndex');
-    print('passedUrl: $passedUrl');
-
     return MaterialApp(
       home: Scaffold(
-          appBar: AppBar(
-            title: const Text('Baskit'),
-          ),
-          body: passedUrl == null
-              ? ItemScreen()
-              : IndexedStack(
-                  index: parserIndex,
-                  children: [
-                    ItemScreen(),
-                    ParseScreen(url: passedUrl!, setStackIndexCallback: setItemsTop),
-                  ],
-                )
-
-          // openedBySharing == 0
-
-          // ? Text("Balls")
-          // : ValueListenableBuilder<Box<Item>>(
-          //     valueListenable: Boxes.getItems().listenable(),
-          //     builder: (context, box, _) {
-          //       final items = box.values.toList().cast<Item>();
-          //       return buildItemCardList(items);
-          //     },
-          //   ),
-          ),
+        appBar: AppBar(
+          title: const Text('Baskit'),
+        ),
+        body: openedBySharing == true
+            ? ParseScreen(url: passedUrl!, setOpenedBySharingCallback: setOpenedBySharing)
+            : ValueListenableBuilder<Box<Item>>(
+                valueListenable: Boxes.getItems().listenable(),
+                builder: (context, box, _) {
+                  final items = box.values.toList().cast<Item>();
+                  return buildItemCardList(items);
+                },
+              ),
+      ),
     );
   }
 
@@ -193,7 +139,10 @@ class ItemCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.all(10.0),
       child: ListTile(
-        leading: Image.network(item.imageURL),
+        // TODO need a better way to do this... I think?
+        leading: item.imageURL != '???'
+            ? Image.network(item.imageURL)
+            : Image.asset('assets/images/not_found.png'),
         title: Text(
           item.title,
           maxLines: 2,
@@ -203,4 +152,36 @@ class ItemCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> getItemDetails(String url) async {
+  // setState(() {
+  //   print('Setting openedBySharing = 1');
+  //   openedBySharing = 1;
+  // });
+
+  NetworkCalls networkCalls = NetworkCalls(url: url);
+  var jsonData = await networkCalls.getJsonResponseBodySTUB();
+
+  // print(jsonData);
+  // print(jsonData['title']);
+  // print(jsonData['imageURL']);
+  // print(jsonData['price']);
+
+  // var document = await networkCalls.getResponseBody();
+
+  // ParseDocument parseDocument = ParseDocument(document: document);
+  //
+  // create a item Model
+  Item item =
+      Item(title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
+
+  final box = Boxes.getItems();
+  box.add(item);
+
+  // // Reset openedBySharing ???
+  // setState(() {
+  //   print('Setting openedBySharing = false');
+  //   openedBySharing = 0;
+  // });
 }
