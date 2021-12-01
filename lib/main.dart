@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'item_screen.dart';
 import 'models/item.dart';
-import 'network.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -152,36 +151,4 @@ class ItemCard extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<void> getItemDetails(String url) async {
-  // setState(() {
-  //   print('Setting openedBySharing = 1');
-  //   openedBySharing = 1;
-  // });
-
-  NetworkCalls networkCalls = NetworkCalls(url: url);
-  var jsonData = await networkCalls.getJsonResponseBodySTUB();
-
-  // print(jsonData);
-  // print(jsonData['title']);
-  // print(jsonData['imageURL']);
-  // print(jsonData['price']);
-
-  // var document = await networkCalls.getResponseBody();
-
-  // ParseDocument parseDocument = ParseDocument(document: document);
-  //
-  // create a item Model
-  Item item =
-      Item(title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
-
-  final box = Boxes.getItems();
-  box.add(item);
-
-  // // Reset openedBySharing ???
-  // setState(() {
-  //   print('Setting openedBySharing = false');
-  //   openedBySharing = 0;
-  // });
 }

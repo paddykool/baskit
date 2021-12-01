@@ -12,20 +12,12 @@ Map<String, dynamic> getItemDetails({required Document document}) {
     data["title"] = h1s[0].text.trim();
   }
 
-  // Get image through nodes....
-  // var nodes = document.nodes;
-  // print('length of nodelist ${nodes.length}');
-  // nodes.forEach((element) {
-  //   print('Element node type: ${element.nodeType}');
-  //   print('does the node have childnren... ${element..hasChildNodes()}');
-  //   print(element.)
-  // });
   // Find the image URL
   var images = document.getElementsByTagName('img');
   print('Number of images found: ${images.length}');
 
-  // // Find the image with the same alt as the title
-  // // TODO add error condition here
+  // Find the image with the same alt as the title
+  // TODO add error condition here
   Element? productImage = images.firstWhereOrNull((image) {
     Map<Object, String> attributeMap = image.attributes;
 
@@ -33,6 +25,7 @@ Map<String, dynamic> getItemDetails({required Document document}) {
         attributeMap['alt'] != null &&
         attributeMap['alt']!.length > 10 &&
         attributeMap['alt']!.substring(0, 9) == data["title"].substring(0, 9);
+    // TODO the above line should be changed to 'contains()'
   });
 
   // Now get the source value
@@ -55,11 +48,12 @@ Map<String, dynamic> getItemDetails({required Document document}) {
 
   // Get Price
   String allText = document.body!.text;
-  // TODO getting all text but would be better with innerHTML
-  // TODO can't find innerHTML property.. but it is there....
+  // TODO getting all text but would be better with innerText
+  // TODO can't find innerText property.. but it is there....
+  // TODO maybe can use xml library ?
   print('text length: ${allText.length}');
 
-  // find the first element that has a '€' at the start
+  // find the first element that has a '€' or '£' or '$' at the start
   final regex = RegExp(r'([\$|£|€]\d{1,6}\.\d{1,2})');
   final match = regex.firstMatch(allText);
   final matchedText = match?.group(0);
