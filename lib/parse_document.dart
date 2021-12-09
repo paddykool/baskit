@@ -2,7 +2,7 @@ import 'package:html/dom.dart'; // Contains DOM related classes for extracting d
 import 'package:collection/collection.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-Map<String, dynamic> getItemDetails({required Document document, required String domain}) {
+Map<String, dynamic> getItemDetails({required Document document, required String origin}) {
   Map<String, dynamic> data = {'title': '???', 'imageURL': '???', 'price': '???'};
 
   // Get the item name
@@ -17,63 +17,7 @@ Map<String, dynamic> getItemDetails({required Document document, required String
 
   // TODO refactor the while get image and put in separate function
   if (data["title"] != '???') {
-    // Find the image URL
-    var images = document.getElementsByTagName('img');
-    Element altSimilarImage = images.reduce((curr, next) =>
-        curr.attributes['alt'].similarityTo(data["title"]) >=
-                next.attributes['alt'].similarityTo(data["title"])
-            ? curr
-            : next);
-
-    print('alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
-    print('src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
-
-    // Now get the source value
-    if (altSimilarImage != null) {
-      print('now checking the source attribute of the productImage...');
-
-      String? rawImageUrl;
-      String? imageUrl;
-      if (altSimilarImage.attributes.containsKey('src')) {
-        rawImageUrl = altSimilarImage.attributes['src']!;
-      } else if (altSimilarImage.attributes.containsKey('data-src')) {
-        rawImageUrl = altSimilarImage.attributes['data-src']!;
-      } else {
-        print('src or data-src was not found');
-      }
-
-      if (rawImageUrl != null) {
-        print('Raw URL found: $rawImageUrl');
-
-        // Account for Protocol Relative URL
-        if (!rawImageUrl.startsWith('http')) {
-          // Add the domain to the start of the URL
-          imageUrl = domain + rawImageUrl;
-        } else {
-          imageUrl = rawImageUrl;
-        }
-
-        // now add to data map
-        print('now adading this to data map: $imageUrl');
-        data['imageURL'] = imageUrl;
-      }
-
-      //   print('imageURL from src attribute: $imageURL');
-      //   // Account for Protocol Relative URL
-      //   imageURL.startsWith('http')
-      //       ? data['imageURL'] = imageURL
-      //       : data['imageURL'] = 'https:' + imageURL; // Hoping that it's https...
-      //   print('URL of source is: ${data['imageURL']}');
-      // } else if (altSimilarImage.attributes.containsKey('data-src')) {
-      //   String imageURL = altSimilarImage.attributes['data-src']!;
-      //   print('imageURL from data-src attribute: $imageURL');
-      //   // Make sure there are
-      // } else {
-      //   print('No src found in image');
-      // }
-    } else {
-      print('altSimilarImage element wasn\'t found.......');
-    }
+    data['imageURL'] = getImageURL(document: document, title: data["title"], origin: origin);
   }
 
   // Get Price
@@ -93,4 +37,49 @@ Map<String, dynamic> getItemDetails({required Document document, required String
   }
 
   return data;
+}
+
+// Function for getting the image source URL
+// TODO refactor this whole thing... its pants
+String getImageURL({required Document document, required String title, required String origin}) {
+  String? rawImageUrl;
+  String imageUrl = '???';
+
+  // Find the image URL
+  var images = document.getElementsByTagName('img');
+  Element altSimilarImage = images.reduce((curr, next) =>
+      curr.attributes['alt'].similarityTo(title) >= next.attributes['alt'].similarityTo(title)
+          ? curr
+          : next);
+
+  print('alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
+  print('src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
+
+  // Now get the source value
+  if (altSimilarImage != null) {
+    print('now checking the source attribute of the productImage...');
+
+    if (altSimilarImage.attributes.containsKey('src')) {
+      rawImageUrl = altSimilarImage.attributes['src']!;
+    } else if (altSimilarImage.attributes.containsKey('data-src')) {
+      rawImageUrl = altSimilarImage.attributes['data-src']!;
+    } else {
+      print('src or data-src was not found.. returning nothing - \'???\'');
+      return '????';
+    }
+
+    if (rawImageUrl != '???') {
+      print('Raw URL found: $rawImageUrl');
+
+      // Account for Protocol Relative URL
+      rawImageUrl.startsWith('http') ? imageUrl = rawImageUrl : imageUrl = origin + rawImageUrl;
+
+      // now add to data map
+      print('final image url: $imageUrl');
+    }
+  } else {
+    print('altSimilarImage element wasn\'t found.......');
+  }
+
+  return imageUrl;
 }

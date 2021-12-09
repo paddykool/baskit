@@ -57,7 +57,7 @@ class ParseScreen extends StatelessWidget {
           // Get the domain name
           String origin = Uri.parse(url).origin;
           print('origin from URL: $origin');
-          var jsonData = getItemDetails(document: dom, domain: origin);
+          var jsonData = getItemDetails(document: dom, origin: origin);
           Item item = Item(
               title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
 
