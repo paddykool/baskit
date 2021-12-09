@@ -2,7 +2,7 @@ import 'package:html/dom.dart'; // Contains DOM related classes for extracting d
 import 'package:collection/collection.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-Map<String, dynamic> getItemDetails({required Document document}) {
+Map<String, dynamic> getItemDetails({required Document document, required String domain}) {
   Map<String, dynamic> data = {'title': '???', 'imageURL': '???', 'price': '???'};
 
   // Get the item name
@@ -10,82 +10,70 @@ Map<String, dynamic> getItemDetails({required Document document}) {
   print('Number of h1s found: ${h1s.length}');
 
   if (h1s.length != 0) {
-    print('h1 raw: ${h1s[0].text}');
-    print('h1 with trim: ${h1s[0].text.trim()}');
-    print("first h1 found: ${h1s[0].text.trim()}");
-    String removeMultiSpace = h1s[0].text.replaceAll(RegExp(r"\s+"), " ");
-    print('removeMultiSpace: $removeMultiSpace');
-    data["title"] = removeMultiSpace.trim();
+    String itemTitle = h1s[0].text.replaceAll(RegExp(r"\s+"), " ").trim();
+    print('removeMultiSpace: $itemTitle');
+    data["title"] = itemTitle;
   }
 
-  // Find the image URL
-  var images = document.getElementsByTagName('img');
-  print('Number of images found: ${images.length}');
+  // TODO refactor the while get image and put in separate function
+  if (data["title"] != '???') {
+    // Find the image URL
+    var images = document.getElementsByTagName('img');
+    Element altSimilarImage = images.reduce((curr, next) =>
+        curr.attributes['alt'].similarityTo(data["title"]) >=
+                next.attributes['alt'].similarityTo(data["title"])
+            ? curr
+            : next);
 
-  // --------------------------------------------------------------------------------
-  //  Find the image element using ... shite
-  //
-  String itemTitle = data["title"];
-  // Element altSimilarImage = images.reduce((curr, next) => curr.attributes['alt'].similarityTo(itemTitle) > next.attributes['alt'].similarityTo(itemTitle) ? curr : next);
+    print('alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
+    print('src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
 
-  Element altSimilarImage = images.reduce((curr, next) {
-    print('curr element alt text: ${curr.attributes['alt']}');
-    print('curr element alt similar value: ${curr.attributes['alt'].similarityTo(itemTitle)}');
-    print('next element alt text: ${next.attributes['alt']}');
-    print('next element alt similar value: ${next.attributes['alt'].similarityTo(itemTitle)}');
-    print('-----------------------');
+    // Now get the source value
+    if (altSimilarImage != null) {
+      print('now checking the source attribute of the productImage...');
 
-    if (curr.attributes['alt'].similarityTo(itemTitle) >=
-        next.attributes['alt'].similarityTo(itemTitle)) {
-      return curr;
+      String? rawImageUrl;
+      String? imageUrl;
+      if (altSimilarImage.attributes.containsKey('src')) {
+        rawImageUrl = altSimilarImage.attributes['src']!;
+      } else if (altSimilarImage.attributes.containsKey('data-src')) {
+        rawImageUrl = altSimilarImage.attributes['data-src']!;
+      } else {
+        print('src or data-src was not found');
+      }
+
+      if (rawImageUrl != null) {
+        print('Raw URL found: $rawImageUrl');
+
+        // Account for Protocol Relative URL
+        if (!rawImageUrl.startsWith('http')) {
+          // Add the domain to the start of the URL
+          imageUrl = domain + rawImageUrl;
+        } else {
+          imageUrl = rawImageUrl;
+        }
+
+        // now add to data map
+        print('now adading this to data map: $imageUrl');
+        data['imageURL'] = imageUrl;
+      }
+
+      //   print('imageURL from src attribute: $imageURL');
+      //   // Account for Protocol Relative URL
+      //   imageURL.startsWith('http')
+      //       ? data['imageURL'] = imageURL
+      //       : data['imageURL'] = 'https:' + imageURL; // Hoping that it's https...
+      //   print('URL of source is: ${data['imageURL']}');
+      // } else if (altSimilarImage.attributes.containsKey('data-src')) {
+      //   String imageURL = altSimilarImage.attributes['data-src']!;
+      //   print('imageURL from data-src attribute: $imageURL');
+      //   // Make sure there are
+      // } else {
+      //   print('No src found in image');
+      // }
     } else {
-      return next;
+      print('altSimilarImage element wasn\'t found.......');
     }
-  });
-
-  print('alt property of Element from string similiar: ${altSimilarImage.attributes['alt']}');
-
-  for (var image in images) {
-    Map<Object, String> attributeMap = image.attributes;
-    if (attributeMap.containsKey('alt')) {
-      print('Image contains alt and value is: ${attributeMap['alt']}');
-    }
-  }
-
-  //
-
-  // --------------------------------------------------------------------------------
-
-  // Find the image with the same alt as the title
-  // TODO add error condition here
-  // Element? productImage = images.firstWhereOrNull((image) {
-  //   Map<Object, String> attributeMap = image.attributes;
-  //
-  //   return attributeMap.containsKey('alt') &&
-  //       attributeMap['alt'] != null &&
-  //       attributeMap['alt']!.length > 10 &&
-  //       ((attributeMap['alt']?.replaceAll(RegExp(r"\s+"), " ").contains(data['title']) ?? false) || (attributeMap['title']?.contains(data['alt'].replaceAll(RegExp(r"\s+"), " ")) ?? false))
-  //       //attributeMap['alt']!.substring(0, 9) == data["title"].substring(0, 9);
-  //   // TODO the above line should be changed to 'contains()'
-  // });
-
-  // Now get the source value
-  Element productImage = altSimilarImage;
-  if (productImage != null) {
-    print('now checking the source attribute of the productImage...');
-
-    if (productImage.attributes.containsKey('src')) {
-      String imageURL = productImage.attributes['src']!;
-      // Account for Protocol Relative URL
-      imageURL.startsWith('http')
-          ? data['imageURL'] = imageURL
-          : data['imageURL'] = 'https:' + imageURL; // Hoping that it's https...
-      print('URL of source is: ${data['imageURL']}');
-    } else {
-      print('No src found in image????');
-    }
-  } else {
-    print('productImage element wasn\'t found.......');
   }
 
   // Get Price

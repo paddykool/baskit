@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import 'boxes.dart';
 import 'models/item.dart';
 
 class ItemScreen extends StatelessWidget {
+  static String id = 'item_screen';
+
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<Item>>(
-      valueListenable: Boxes.getItems().listenable(),
-      builder: (context, box, _) {
-        final items = box.values.toList().cast<Item>();
-        return buildItemCardList(items);
-      },
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Baskit Item Screen'),
+      ),
+      body: ValueListenableBuilder<Box<Item>>(
+        valueListenable: Boxes.getItems().listenable(),
+        builder: (context, box, _) {
+          final items = box.values.toList().cast<Item>();
+          return buildItemCardList(items);
+        },
+      ),
     );
   }
 }
