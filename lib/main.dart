@@ -38,10 +38,12 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     // For sharing or opening urls/text coming from outside the app while the app is in the memory
-    _intentDataStreamSubscription = ReceiveSharingIntent.getTextStream().listen((String url) {
+    _intentDataStreamSubscription =
+        ReceiveSharingIntent.getTextStream().listen((String url) {
       setOpenedBySharing(value: true);
       print('inside "ReceiveSharingIntent.getTextStream()"...');
-      print('Value passed in from getTextStream() was $url... Setting passedUrl variable');
+      print(
+          'Value passed in from getTextStream() was $url... Setting passedUrl variable');
       passedUrl = url;
       // getItemDetails(url);
     }, onError: (err) {
@@ -52,7 +54,8 @@ class _MyAppState extends State<MyApp> {
     ReceiveSharingIntent.getInitialText().then((String? url) {
       print('inside "ReceiveSharingIntent.getInitialText()"...');
       if (url != null) {
-        print('Value passed in from getInitialText() was $url... Setting passedUrl variable');
+        print(
+            'Value passed in from getInitialText() was $url... Setting passedUrl variable');
         setOpenedBySharing(value: true);
         passedUrl = url;
         // getItemDetails(url);
@@ -72,61 +75,15 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: openedBySharing == true
-          ? ParseScreen(url: passedUrl!, setOpenedBySharingCallback: setOpenedBySharing)
+          ? ParseScreen(
+              url: passedUrl!, setOpenedBySharingCallback: setOpenedBySharing)
           : ItemScreen(),
       // routes: {
       //   ItemScreen.id: (context) => ItemScreen(),
       //   ParseScreen.id: (context) =>
       //       ParseScreen(url: passedUrl!, setOpenedBySharingCallback: setOpenedBySharing),
       // },
-
-      // home: Scaffold(
-      //   appBar: AppBar(
-      //     title: const Text('Baskit'),
-      //   ),
-      //   body: openedBySharing == true
-      //       ? ParseScreen(url: passedUrl!, setOpenedBySharingCallback: setOpenedBySharing)
-      //       : ValueListenableBuilder<Box<Item>>(
-      //           valueListenable: Boxes.getItems().listenable(),
-      //           builder: (context, box, _) {
-      //             final items = box.values.toList().cast<Item>();
-      //             return buildItemCardList(items);
-      //           },
-      //         ),
-      // ),
     );
-  }
-
-  // take list of item model objcts
-  // and return a list view of the cards
-  Widget buildItemCardList(List<Item> items) {
-    if (items.isEmpty) {
-      return Center(
-        child: Text('No items yet'),
-      );
-    } else {
-      return Column(
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              clearItemBox();
-            },
-            child: Text('Clear list'),
-          ),
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: items.length,
-              itemBuilder: (BuildContext context, int index) {
-                final item = items[index];
-                return ItemCard(item: item);
-              },
-            ),
-          )
-        ],
-      );
-    }
   }
 
   @override
