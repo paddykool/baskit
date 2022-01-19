@@ -25,7 +25,8 @@ class ParseScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ItemScreen()));
+            Navigator.push(
+                context, MaterialPageRoute(builder: (context) => ItemScreen()));
           },
           child: Text('Items List')),
       body: WebView(
@@ -37,8 +38,8 @@ class ParseScreen extends StatelessWidget {
         onPageFinished: (string) async {
           // await Future.delayed(Duration(seconds: 5));
           String docuDecode;
-          String docu =
-              await _controller.runJavascriptReturningResult("document.documentElement.outerHTML");
+          String docu = await _controller.runJavascriptReturningResult(
+              "document.documentElement.outerHTML");
           // For Safari - actual HTML comes backand not Json so encoding first...
           if (Platform.isIOS) {
             docuDecode = jsonDecode(jsonEncode(docu));
@@ -59,14 +60,17 @@ class ParseScreen extends StatelessWidget {
           print('origin from URL: $origin');
           var jsonData = getItemDetails(document: dom, origin: origin);
           Item item = Item(
-              title: jsonData['title'], imageURL: jsonData['imageURL'], price: jsonData['price']);
+              title: jsonData['title'],
+              imageURL: jsonData['imageURL'],
+              price: jsonData['price']);
 
           final box = Boxes.getItems();
           box.add(item);
 
           // Navigate back to item screen
           // TODO maybe put this at the very end ??
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ItemScreen()));
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => ItemScreen()));
         },
       ),
     );
