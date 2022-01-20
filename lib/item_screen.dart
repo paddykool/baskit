@@ -4,8 +4,24 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'boxes.dart';
 import 'models/item.dart';
 
-class ItemScreen extends StatelessWidget {
-  static String id = 'item_screen';
+class ItemScreen extends StatefulWidget {
+  const ItemScreen({Key? key}) : super(key: key);
+
+  static Page page({LocalKey? key}) => MaterialPage(
+        key: key,
+        child: ItemScreen(),
+      );
+
+  @override
+  State<ItemScreen> createState() => _ItemScreenState();
+}
+
+class _ItemScreenState extends State<ItemScreen> {
+  // @override
+  // void dispose() {
+  //   Hive.box('items').close();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
