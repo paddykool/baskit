@@ -32,26 +32,14 @@ class Baskit extends StatefulWidget {
 class _BaskitState extends State<Baskit> {
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AppStateManager>(
-            lazy: false, create: (BuildContext context) => appStateManager),
-        Provider<MyGoRouter>(
-          lazy: false,
-          create: (BuildContext createContext) => MyGoRouter(appStateManager),
-        )
-      ],
-      child: Builder(
-        builder: (BuildContext context) {
-          final router =
-              Provider.of<MyGoRouter>(context, listen: false).goRouter;
-          return MaterialApp.router(
-            title: 'Baskit',
-            debugShowCheckedModeBanner: false,
-            routerDelegate: router.routerDelegate,
-            routeInformationParser: router.routeInformationParser,
-          );
-        },
+    return ChangeNotifierProvider<AppStateManager>(
+      // lazy: false,
+      create: (BuildContext context) => appStateManager,
+      child: MaterialApp.router(
+        title: 'Baskit',
+        debugShowCheckedModeBanner: false,
+        routerDelegate: goRouter.routerDelegate,
+        routeInformationParser: goRouter.routeInformationParser,
       ),
     );
   }
@@ -59,6 +47,7 @@ class _BaskitState extends State<Baskit> {
   @override
   void dispose() {
     Hive.box('items').close();
+    appStateManager.closeShareURLStream();
     super.dispose();
   }
 }
