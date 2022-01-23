@@ -14,7 +14,14 @@ void main() async {
   await Hive.openBox<Item>('items');
 
   // initialise the shareURL properties
-  appStateManager.initialiseShareLaunchProperties();
+  // TODO try async await here
+  await appStateManager.initialiseWasOpenedByShareLaunch();
+
+  // setup the stream to listen to onResume
+  appStateManager.initialiseResumedBySharingURL();
+
+  // wait 4 seconds before setting isinitialised to true
+  appStateManager.initialiseApp();
 
   runApp(Baskit());
 }
@@ -28,7 +35,7 @@ class _BaskitState extends State<Baskit> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppStateManager>(
-      // lazy: false,
+      lazy: false,
       create: (BuildContext context) => appStateManager,
       child: MaterialApp.router(
         title: 'Baskit',
