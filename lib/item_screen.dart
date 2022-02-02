@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'boxes.dart';
 import 'models/item.dart';
+import 'navigation/routes.dart';
 
 class ItemScreen extends StatefulWidget {
   const ItemScreen({Key? key}) : super(key: key);
@@ -86,7 +88,12 @@ class ItemCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.all(10.0),
       child: ListTile(
-        leading: Image.network(item.imageURL),
+        leading: Image.network(
+          item.imageURL,
+          errorBuilder: (context, exception, stackTrace) {
+            return Image.asset('assets/images/not_found.png');
+          },
+        ),
         title: Text(
           item.title,
           maxLines: 2,

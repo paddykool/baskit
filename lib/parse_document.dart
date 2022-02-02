@@ -2,22 +2,29 @@ import 'package:html/dom.dart'; // Contains DOM related classes for extracting d
 import 'package:collection/collection.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-Map<String, dynamic> getItemDetails({required Document document, required String origin}) {
-  Map<String, dynamic> data = {'title': '???', 'imageURL': '???', 'price': '???'};
+Map<String, dynamic> getItemDetails(
+    {required Document document,
+    required String host,
+    required int h1Position}) {
+  Map<String, dynamic> data = {
+    'title': '???',
+    'imageURL': '???',
+    'price': '???'
+  };
 
-  // Get the item name
+  // Get the item name from h1 element
   List<Element> h1s = document.getElementsByTagName('h1');
   print('Number of h1s found: ${h1s.length}');
 
-  if (h1s.length != 0) {
-    String itemTitle = h1s[0].text.replaceAll(RegExp(r"\s+"), " ").trim();
-    print('removeMultiSpace: $itemTitle');
-    data["title"] = itemTitle;
-  }
+  String itemTitle =
+      h1s[h1Position].text.replaceAll(RegExp(r"\s+"), " ").trim();
+  print('removeMultiSpace from title: $itemTitle');
+  data["title"] = itemTitle;
 
-  // TODO refactor the while get image and put in separate function
+  // TODO refactor the whole get image and put in separate function
   if (data["title"] != '???') {
-    data['imageURL'] = getImageURL(document: document, title: data["title"], origin: origin);
+    data['imageURL'] =
+        getImageURL(document: document, title: data["title"], host: host);
   }
 
   // Get Price
@@ -41,19 +48,23 @@ Map<String, dynamic> getItemDetails({required Document document, required String
 
 // Function for getting the image source URL
 // TODO refactor this whole thing... its pants
-String getImageURL({required Document document, required String title, required String origin}) {
-  String? rawImageUrl;
+String getImageURL(
+    {required Document document, required String title, required String host}) {
+  String? rawImageUrl = '???';
   String imageUrl = '???';
 
   // Find the image URL
   var images = document.getElementsByTagName('img');
   Element altSimilarImage = images.reduce((curr, next) =>
-      curr.attributes['alt'].similarityTo(title) >= next.attributes['alt'].similarityTo(title)
+      curr.attributes['alt'].similarityTo(title) >=
+              next.attributes['alt'].similarityTo(title)
           ? curr
           : next);
 
-  print('alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
-  print('src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
+  print(
+      'alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
+  print(
+      'src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
 
   // Now get the source value
   if (altSimilarImage != null) {
@@ -72,14 +83,34 @@ String getImageURL({required Document document, required String title, required 
       print('Raw URL found: $rawImageUrl');
 
       // Account for Protocol Relative URL
-      rawImageUrl.startsWith('http') ? imageUrl = rawImageUrl : imageUrl = origin + rawImageUrl;
+      // parse the URL to see if it has an origin....
+      Uri myURI = Uri.parse(rawImageUrl);
+      print('myURI.host: ${myURI.host}');
+      // print('myURI.origin: ${myURI.origin}');
+      print('myURI.hasScheme: ${myURI.hasScheme}');
+      print('myURI.scheme: ${myURI.scheme}');
+
+      // Add the host if it is missing - e.g. woodies.ie
+      if (myURI.host == "") {
+        print('host is missing... adding the origin');
+        rawImageUrl = host + rawImageUrl;
+      }
+
+      // adding the protocol is its missin - e.g. fitpink / shopify
+      if (myURI.hasScheme == false) {
+        if (rawImageUrl.substring(0, 2) != '//') {
+          rawImageUrl = 'https://' + rawImageUrl;
+        } else {
+          rawImageUrl = 'https:' + rawImageUrl;
+        }
+      }
 
       // now add to data map
-      print('final image url: $imageUrl');
+      print('final image url: $rawImageUrl');
     }
   } else {
     print('altSimilarImage element wasn\'t found.......');
   }
 
-  return imageUrl;
+  return rawImageUrl;
 }

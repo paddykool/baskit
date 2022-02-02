@@ -11,6 +11,7 @@ final goRouter = GoRouter(
     Routes.splash,
     Routes.item,
     Routes.parse,
+    Routes.error,
   ],
   redirect: (state) {
     // opened by sharing logic
@@ -36,9 +37,15 @@ final goRouter = GoRouter(
     }
 
     if (appStateManager.isInitialised) {
+      print('DEBUG - inside the appStateManager.isInitialise');
       print('state.location: ${state.location}');
       print('state.subloc: ${state.subloc}');
       print('state.path: ${state.path}');
+      if (state.subloc == Routes.error.path) {
+        print('Returning null as route is error path');
+        return null;
+      }
+
       if (state.subloc != Routes.item.path) {
         return Routes.item.path;
       }
