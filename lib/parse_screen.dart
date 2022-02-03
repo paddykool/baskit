@@ -89,8 +89,11 @@ class _ParseScreen2State extends State<ParseScreen2> {
 
                 // Get the position of thee first visible h1
                 // (if there are multiple h1's in the doc)
-                int h1Position =
+                dynamic h1Position =
                     await _controller!.evaluateJavascript(source: jsFindH1);
+
+                // mae sure it's an Int
+                h1Position = h1Position.toInt();
 
                 // parse the html to get the dom
                 var dom = parse(doc);

@@ -1,5 +1,5 @@
 import 'package:baskit/error_screen.dart';
-import 'package:baskit/parse_screen2.dart';
+import 'package:baskit/parse_screen.dart';
 import 'package:baskit/item_screen.dart';
 import 'package:baskit/splash_screen.dart';
 import 'package:flutter/material.dart';
