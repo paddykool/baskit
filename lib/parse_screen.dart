@@ -27,6 +27,7 @@ class ParseScreen2 extends StatefulWidget {
 class _ParseScreen2State extends State<ParseScreen2> {
   InAppWebViewController? _controller;
   var loadingPercentage = 0;
+  late String passedURL = "";
   String jsGetHTML = "document.documentElement.outerHTML";
   String jsFindH1 = """
       var collectionOfH1s = document.documentElement.getElementsByTagName("h1")
@@ -44,6 +45,15 @@ class _ParseScreen2State extends State<ParseScreen2> {
     String passedURL =
         Provider.of<AppStateManager>(context, listen: false).sharedURL;
     print('pasased URL recieved in parse screen.. $passedURL');
+    // Make sure it's using https
+    Uri parsedURL = Uri.parse(passedURL);
+    if (parsedURL.scheme == 'http') {
+      print('parsedURL before $parsedURL');
+      parsedURL = parsedURL.replace(scheme: 'https');
+      print('parsedURL after $parsedURL');
+    }
+
+    print('BUILD BUILD BUILD BUILD BUILD BUILD I\'m in the build method');
 
     return Scaffold(
       appBar: AppBar(
@@ -60,8 +70,11 @@ class _ParseScreen2State extends State<ParseScreen2> {
       body: Stack(
         alignment: Alignment.center,
         children: [
+          // TODO - Maybe take this out as separate class
+          // TODO - Actually just create a model for the parse screen state
+          // and add the url and progress indicator. Then use provider and change notifier ?
           InAppWebView(
-            initialUrlRequest: URLRequest(url: Uri.parse('$passedURL')),
+            initialUrlRequest: URLRequest(url: parsedURL),
             onWebViewCreated: (controller) {
               _controller = controller;
             },
@@ -89,10 +102,13 @@ class _ParseScreen2State extends State<ParseScreen2> {
 
                 // Get the position of thee first visible h1
                 // (if there are multiple h1's in the doc)
+                // TODO - if there are multiple h1's try a get first visible
+                // image and then get the ALT text, then get the h1 from that.
+                // kinda working backwards
                 dynamic h1Position =
                     await _controller!.evaluateJavascript(source: jsFindH1);
 
-                // mae sure it's an Int
+                // make sure it's an Int
                 h1Position = h1Position.toInt();
 
                 // parse the html to get the dom
