@@ -1,116 +1,152 @@
 import 'package:html/dom.dart'; // Contains DOM related classes for extracting data from elements
 import 'package:collection/collection.dart';
+import 'package:html/dom.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-Map<String, dynamic> getItemDetails(
-    {required Document document,
-    required String host,
-    required int h1Position}) {
+Map<String, dynamic> getItemDetails({
+  required Document document,
+  required String host,
+  int? numH1s,
+  int? h1Position,
+  required Map<String, dynamic> allVisibleImages,
+}) {
   Map<String, dynamic> data = {
     'title': '???',
     'imageURL': '???',
     'price': '???'
   };
 
-  // Get the item name from h1 element
-  List<Element> h1s = document.getElementsByTagName('h1');
-  print('Number of h1s found: ${h1s.length}');
+  // IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE IMAGE
+  // NEW PLAN!! - go though al the visible images and get
+  // the image who's alt is most similar to the title
+  // So first... get a list from the map
 
-  String itemTitle =
-      h1s[h1Position].text.replaceAll(RegExp(r"\s+"), " ").trim();
-  print('removeMultiSpace from title: $itemTitle');
-  data["title"] = itemTitle;
+  List<ImageAttributes> imageList = allVisibleImages.values
+      .map((value) => ImageAttributes(
+            value["alt"],
+            value["area"],
+            value["currentSrc"],
+            value["datasrc"],
+            value["imageElementPosition"],
+            value["src"],
+          ))
+      .toList();
 
-  // TODO refactor the whole get image and put in separate function
-  if (data["title"] != '???') {
-    data['imageURL'] =
-        getImageURL(document: document, title: data["title"], host: host);
+  print(imageList);
+
+  //  Now find the largest image
+  ImageAttributes largestImage =
+      imageList.reduce((curr, next) => curr.area >= next.area ? curr : next);
+
+  print('alt property of largest visible Image Element: ${largestImage.alt}');
+  print('src property of largest visible Image Element: ${largestImage.src}');
+
+  // if src is empty - use current src
+  String? rawImageUrl;
+  if (largestImage.src != "") {
+    rawImageUrl = largestImage.src;
+  } else {
+    rawImageUrl = largestImage.currentSrc;
   }
 
-  // Get Price
-  String allText = document.body!.text;
-  // TODO getting all text but would be better with innerText
-  // TODO can't find innerText property.. but it is there....
-  // TODO maybe can use xml library ?
-  print('text length: ${allText.length}');
+  // now add to data map
+  print('final image url: $rawImageUrl');
+  data['imageURL'] = rawImageUrl;
+
+  // TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE TITLE
+  if (numH1s != 0) {
+    String itemTitle;
+    List<Element> h1s = document.getElementsByTagName('h1');
+    if (h1Position != null) {
+      // get the text of the first visible h1
+      // Marks and Spencer mobile has title as first h1 (but it's not visible)
+      if (host.contains('marksandspencer')) {
+        itemTitle = h1s[0].text.replaceAll(RegExp(r"\s+"), " ").trim();
+      } else {
+        // continue as normal
+        itemTitle = h1s[h1Position].text.replaceAll(RegExp(r"\s+"), " ").trim();
+      }
+    } else {
+      itemTitle = h1s[0].text.replaceAll(RegExp(r"\s+"), " ").trim();
+    }
+
+    print('title: $itemTitle');
+    data["title"] = itemTitle;
+  } else {
+    // If there are no h1's - use the alt from the image
+    print('NO H1\'S IN HTML - using alt from image');
+    print('title: ${largestImage.alt}');
+    data["title"] = largestImage.alt;
+  }
+
+  // PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE PRICE
+  // OK so now we need the actual image element
+  // Get the image element by the position of largest img
+
+  // var imageElementPosition = largestImage.imageElementPosition
+
+  Element actualImageElement = document
+      .querySelectorAll('img')[largestImage.imageElementPosition.toInt()];
+
+  // Then return the first text that has a € or £ symbol
+  String textContainingPrice = getParentText(element: actualImageElement);
+
+  print('parentTextContainingPrice: $textContainingPrice');
 
   // find the first element that has a '€' or '£' or '$' at the start
-  final regex = RegExp(r'([\$|£|€]\d{1,6}\.\d{1,2})');
-  final match = regex.firstMatch(allText);
+  // Maybe needs firstmatchOrNull ??
+  final regex = RegExp(r'[\$£€]\s*\d{1,6}([,|\.]\d{1,2})?');
+  final match = regex.firstMatch(textContainingPrice);
   final matchedText = match?.group(0);
   if (matchedText != null) {
     data['price'] = matchedText;
     print('Price found: $matchedText');
+  } else {
+    print(
+        'DEBUG DEBUG - NO PRICE FOUND!!! NO PRICE FOUND!!! NO PRICE FOUND!!! NO PRICE FOUND!!! ');
   }
 
   return data;
 }
 
-// Function for getting the image source URL
-// TODO refactor this whole thing... its pants
-String getImageURL(
-    {required Document document, required String title, required String host}) {
-  String? rawImageUrl = '???';
-  String imageUrl = '???';
+String getParentText({required Element element}) {
+  String textThatContainsPrice = "";
 
-  // Find the image URL
-  var images = document.getElementsByTagName('img');
-  Element altSimilarImage = images.reduce((curr, next) =>
-      curr.attributes['alt'].similarityTo(title) >=
-              next.attributes['alt'].similarityTo(title)
-          ? curr
-          : next);
-
-  print(
-      'alt property of Element most similar to title: ${altSimilarImage.attributes['alt']}');
-  print(
-      'src property of Element most similar to title: ${altSimilarImage.attributes['src']}');
-
-  // Now get the source value
-  if (altSimilarImage != null) {
-    print('now checking the source attribute of the productImage...');
-
-    if (altSimilarImage.attributes.containsKey('src')) {
-      rawImageUrl = altSimilarImage.attributes['src']!;
-    } else if (altSimilarImage.attributes.containsKey('data-src')) {
-      rawImageUrl = altSimilarImage.attributes['data-src']!;
-    } else {
-      print('src or data-src was not found.. returning nothing - \'???\'');
-      return '????';
-    }
-
-    if (rawImageUrl != '???') {
-      print('Raw URL found: $rawImageUrl');
-
-      // Account for Protocol Relative URL
-      // parse the URL to see if it has an origin....
-      Uri myURI = Uri.parse(rawImageUrl);
-      print('myURI.host: ${myURI.host}');
-      // print('myURI.origin: ${myURI.origin}');
-      print('myURI.hasScheme: ${myURI.hasScheme}');
-      print('myURI.scheme: ${myURI.scheme}');
-
-      // Add the host if it is missing - e.g. woodies.ie
-      if (myURI.host == "") {
-        print('host is missing... adding the origin');
-        rawImageUrl = host + rawImageUrl;
-      }
-
-      // adding the protocol is its missin - e.g. fitpink / shopify
-      if (myURI.hasScheme == false) {
-        if (rawImageUrl.substring(0, 2) != '//') {
-          rawImageUrl = 'https://' + rawImageUrl;
-        } else {
-          rawImageUrl = 'https:' + rawImageUrl;
-        }
-      }
-
-      // now add to data map
-      print('final image url: $rawImageUrl');
-    }
-  } else {
-    print('altSimilarImage element wasn\'t found.......');
+  // Create a list of all the parent elements
+  List<Element> parentElements = [];
+  Element? parentElement = element.parent;
+  while (parentElement != null) {
+    parentElements.add(parentElement);
+    parentElement = parentElement.parent;
   }
 
-  return rawImageUrl;
+  // Now find the first element whose text contains 'a' price
+  // TODO this is causing issue with ASOS - cannot find a firstwhere
+  // Maybe needs firstwhereornull...
+  final moneySymbolRegEx = RegExp(r'[\$£€]\s*\d{1,6}');
+  Element? priceContainingElement = parentElements
+      .firstWhereOrNull((element) => element.text.contains(moneySymbolRegEx));
+
+  if (priceContainingElement == null) {
+    return "Regular expression not found in all text...";
+  }
+  return priceContainingElement.text;
+}
+
+class ImageAttributes {
+  final alt;
+  final area;
+  final currentSrc;
+  final datasrc;
+  final imageElementPosition;
+  final src;
+
+  ImageAttributes(
+    this.alt,
+    this.area,
+    this.currentSrc,
+    this.datasrc,
+    this.imageElementPosition,
+    this.src,
+  );
 }

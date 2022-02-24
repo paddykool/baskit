@@ -20,7 +20,7 @@ void main() async {
   // setup the stream to listen to onResume
   appStateManager.initialiseResumedBySharingURL();
 
-  // wait 4 seconds before setting isinitialised to true
+  // wait 4 seconds before setting isInitialised to true
   appStateManager.initialiseApp();
 
   runApp(Baskit());

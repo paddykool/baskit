@@ -15,7 +15,7 @@ class Routes {
   static final parse = GoRoute(
     path: '/parse',
     pageBuilder: (BuildContext context, GoRouterState state) =>
-        ParseScreen2.page(key: state.pageKey),
+        ParseScreen.page(key: state.pageKey),
   );
 
   static final splash = GoRoute(

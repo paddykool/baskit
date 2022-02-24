@@ -12,24 +12,28 @@ import 'package:baskit/models/app_state_manager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:baskit/navigation/routes.dart';
 
-class ParseScreen2 extends StatefulWidget {
-  const ParseScreen2({Key? key}) : super(key: key);
+class ParseScreen extends StatefulWidget {
+  const ParseScreen({Key? key}) : super(key: key);
 
   static Page page({LocalKey? key}) => MaterialPage(
         key: key,
-        child: ParseScreen2(),
+        child: ParseScreen(),
       );
 
   @override
-  State<ParseScreen2> createState() => _ParseScreen2State();
+  State<ParseScreen> createState() => _ParseScreenState();
 }
 
-class _ParseScreen2State extends State<ParseScreen2> {
+class _ParseScreenState extends State<ParseScreen> {
   InAppWebViewController? _controller;
   var loadingPercentage = 0;
   late String passedURL = "";
+  var h1Position;
+  dynamic allVisibleImg;
   String jsGetHTML = "document.documentElement.outerHTML";
-  String jsFindH1 = """
+  String jsGetiFrames =
+      "document.documentElement.getElementsByTagName('iframe')";
+  String jsFirstVisibleH1 = """
       var collectionOfH1s = document.documentElement.getElementsByTagName("h1")
       var htmlArray = Array.from(collectionOfH1s);
       var firstElementIndex = htmlArray.findIndex(isNotHidden) 
@@ -39,13 +43,142 @@ class _ParseScreen2State extends State<ParseScreen2> {
           return (el.offsetParent != null)
       }
   """;
+  String jsAllVisibleImg = """
+    function isInViewport(element) {
+      var position = element.getBoundingClientRect()
+    
+      // checking whether fully visible
+      return position.top > 0 && position.bottom <= window.innerHeight+250 && position.left >= 0 && position.right <= window.innerWidth
+    }
+  
+    var collectionOfIMGs = document.documentElement.getElementsByTagName("img")
+    var collectionOfVisibleImages = []
+    var listOfVisibleImagesObj = {}
+    var counter = 0
+    for (let item of collectionOfIMGs){
+      //if(isInViewport(item)){
+      if(true){
+        var clientRect = item.getBoundingClientRect()
+        var imageObj = {
+          src: item.src,
+          alt: item.alt,
+          x: clientRect.x,
+          y: clientRect.y,
+          width: clientRect.width,
+          height: clientRect.height,
+          top: clientRect.top,
+          bottom: clientRect.bottom,
+          right: clientRect.right,
+          left: clientRect.left,
+        }
+
+        var imageName = "img" + counter
+        listOfVisibleImagesObj[imageName] = imageObj
+        counter++
+      }
+    }
+
+    listOfVisibleImagesObj
+
+  """;
+  String jsAllVisibleImg2 = """
+    function areaInViewPort(element) {
+    var pos = element.getBoundingClientRect()
+    var windowHeight = window.innerHeight
+    var windowWidth = window.innerWidth
+    var ActuaulElementWidth
+    var ActuaulElementHeight
+    
+    // GET THE ACTUAL VISIBLE HEIGHT
+    // Should try to use switch statement here
+    if(pos.height == 0 || pos.left-pos.right == 0){
+       console.debug('HEIGHT height or width is 0')
+        ActuaulElementHeight = 0 
+    } else if(pos.top + pos.height <= 0){
+        console.debug('HEIGHT top+height is less than zero')
+        ActuaulElementHeight = 0
+    } else if(pos.top + pos.height < pos.height ){
+        console.debug('HEIGHT Image is partically visible from top')
+        ActuaulElementHeight = pos.bottom
+    } else if(pos.top + pos.height < windowHeight){
+        console.debug('HEIGHT Image is Fully visible')
+        ActuaulElementHeight = pos.height
+    } else if(pos.top < windowHeight){
+        console.debug('HEIGHT Image is partically visible from the bottom')
+        ActuaulElementHeight = (windowHeight - pos.top)
+    } else if(pos.top > windowHeight){
+        console.debug('HEIGHT top is greater than window height')
+        ActuaulElementHeight = 0
+    } else {
+        console.debug('HEIGHT -  SOMETHING. SLIPPED THROUGH. THIS SHOULD NOT BE HERE.')
+        ActuaulElementHeight = 0
+    }
+
+    // GET THE ACTUAL VISIBLE WIDTH
+    // Should try to use switch statement here
+    if(pos.width == 0 || pos.left-pos.right == 0){
+       console.debug('WIDTH height or width is 0')
+        ActuaulElementWidth = 0 
+    } else if(pos.right <= 0){
+        console.debug('WIDTH right is less than zero')
+        ActuaulElementWidth = 0 
+    } else if(pos.left + pos.width < pos.width ){
+        console.debug('WIDTH Image is partically visible from left')
+        ActuaulElementWidth = pos.right
+    } else if(pos.left + pos.width < windowWidth){
+        console.debug('WIDTH Image is Fully visible')
+        ActuaulElementWidth = pos.width
+    } else if(pos.left < windowWidth){
+        console.debug('WIDTH Image is partically visible from the right')
+        ActuaulElementWidth = (windowWidth - pos.left) 
+    } else if(pos.left > windowWidth){
+        console.debug('WIDTH left is greater than window width')
+        ActuaulElementWidth = 0 
+    } else {
+        console.debug('WIDTH -  SOMETHING. SLIPPED THROUGH. THIS SHOULD NOT BE HERE.')
+        ActuaulElementWidth = 0
+    }
+    return ActuaulElementHeight * ActuaulElementWidth
+}
+
+var collectionOfIMGs = document.documentElement.getElementsByTagName("img")
+var listOfImagesObj = {}
+var counter = 0
+for (let item of collectionOfIMGs){
+  var imageArea = areaInViewPort(item)
+  var imageObj = {
+    imageElementPosition: counter,
+    datasrc: item["data-src"],
+    currentSrc: item.currentSrc,
+    src: item.src,
+    alt: item.alt,
+    area: imageArea,
+  }
+  
+  var imageName = "img" + counter
+  listOfImagesObj[imageName] = imageObj
+  counter++
+}
+
+listOfImagesObj
+  """;
+
+  int loadStopCount = 0;
+  incrementOnLoadStopCount() {
+    loadStopCount++;
+  }
 
   @override
   Widget build(BuildContext context) {
     String passedURL =
         Provider.of<AppStateManager>(context, listen: false).sharedURL;
-    print('pasased URL recieved in parse screen.. $passedURL');
-    // Make sure it's using https
+    print('passed URL received in parse screen.. $passedURL');
+
+    // TODO - argos - iOd and Android - does it need an if ??
+    // Remove any ';' characters... ARGOS MADE ME DO THIS
+    passedURL = passedURL.replaceAll(";", "");
+
+    // Make sure it's using https - was this for argos ?
     Uri parsedURL = Uri.parse(passedURL);
     if (parsedURL.scheme == 'http') {
       print('parsedURL before $parsedURL');
@@ -79,74 +212,162 @@ class _ParseScreen2State extends State<ParseScreen2> {
               _controller = controller;
             },
             onLoadStart: (controller, url) {
+              print('STARTING ONLOADSTART ---------- $url');
               setState(() {
                 loadingPercentage = 0;
               });
             },
-            onProgressChanged: (_, progress) {
+            onProgressChanged: (controllerr, progress) async {
               print('DEBUG DEBUG - Progress = $progress');
+              Uri? daURL = await controllerr.getUrl();
+              print(daURL);
               setState(() {
                 loadingPercentage = progress;
               });
             },
             onLoadStop: (controller, url) async {
-              setState(() {
-                loadingPercentage = 100;
-              });
+              // int? progressInsideLoadStop = await controller.getProgress();
+              // print('STARTING onLoadStop() - $url');
+              // print('PROGRESS INSIDE ONLOADSTOP: $progressInsideLoadStop');
+              // if (progressInsideLoadStop != 100) {
+              //   print('going to wait for 3 seconds');
+              //   // wait 0.5 seconds
+              //   await Future.delayed(Duration(milliseconds: 3000));
+              //   print('Finished waiting to wait for 3 seconds');
+              // }
+              // print('PROGRESS INSIDE ONLOADSTOP: $progressInsideLoadStop');
+              // setState(() {
+              //   loadingPercentage = 100;
+              //   incrementOnLoadStopCount();
+              //   print('INSIDE SETSTATE onLoadStopCount: $loadStopCount');
+              // });
+              //
+              // print('OUTSIDE SETSTATE onLoadStopCount: $loadStopCount');
 
-              // Wrapping the whole thing in a try / catch as loads can go wrong
-              try {
-                // get all the html
-                String doc =
-                    await _controller!.evaluateJavascript(source: jsGetHTML);
+              // If an iframe finishes loading it can trigger onLoadStop
+              // even though the parent webpage is still not ready
+              // so check that the progress is 100
+              print('STARTING onLoadStop() - $url');
+              int? progressInsideLoadStop = await controller.getProgress();
+              if (progressInsideLoadStop == 100) {
+                // Wrapping the whole thing in a try / catch as loads can go wrong
+                try {
+                  // TODO - add some sort of code to check ready state of each iFrame
+                  // BUT THIS MIGHT FAIL IF DOMAIN IS NOT THE SAME.... FIGURE THIS OUT
+                  // IFRAME CRAP.......
+                  // check if there are any iframes present and wait 3 seconds id there is
+                  // print('RUNNING RUNNING RUNNING RUNNING - jsGetIFrames');
+                  // String iFrames =
+                  //     await _controller!.evaluateJavascript(source: jsGetiFrames);
+                  // print("Contents of iFrames: $iFrames");
+                  // if (iFrames.isNotEmpty) {
+                  //   // wait 5 seconds
+                  //   await Future.delayed(Duration(seconds: 5));
+                  // }
 
-                // Get the position of thee first visible h1
-                // (if there are multiple h1's in the doc)
-                // TODO - if there are multiple h1's try a get first visible
-                // image and then get the ALT text, then get the h1 from that.
-                // kinda working backwards
-                dynamic h1Position =
-                    await _controller!.evaluateJavascript(source: jsFindH1);
+                  // get all the html
+                  print('RUNNING RUNNING RUNNING RUNNING - jsGetHTML');
+                  String doc =
+                      await _controller!.evaluateJavascript(source: jsGetHTML);
 
-                // make sure it's an Int
-                h1Position = h1Position.toInt();
+                  // parse the html to get the dom
+                  var dom = parse(doc);
 
-                // parse the html to get the dom
-                var dom = parse(doc);
+                  // // TODO IFrame crap
+                  // int numOfIFrames = dom.getElementsByTagName('iframe').length;
+                  // if (numOfIFrames > 0) {
+                  //   // wait 5 seconds
+                  //   await Future.delayed(Duration(seconds: 5));
+                  //
+                  //   String doc2 =
+                  //       await _controller!.evaluateJavascript(source: jsGetHTML);
+                  //
+                  //   print('Just waiting on doc 2');
+                  // }
 
-                // Get the domain name
-                String host = Uri.parse(passedURL).host;
-                print('host from URL: $host');
+                  // find out the number of h1's in the dom
+                  var numOfH1s = dom.getElementsByTagName('h1').length;
 
-                // Get all the item details
-                var jsonData = getItemDetails(
-                    document: dom, host: host, h1Position: h1Position);
+                  // // if there are no h1's then abort and goto error screen
+                  // if (numOfH1s == 0) {
+                  //   print('no h1s brought back... aborting');
+                  //   // TODO - This does not work.. prob something with the redirect...
+                  //   context.go(Routes.error.path);
+                  // }
 
-                // Create the item
-                Item item = Item(
-                    title: jsonData['title'],
-                    imageURL: jsonData['imageURL'],
-                    price: jsonData['price']);
+                  // if there are multiple h1s the find first visible on
+                  if (numOfH1s > 1) {
+                    print(
+                        'multiple h1\'s brought back.. finding first visible h1..');
+                    print('RUNNING RUNNING RUNNING RUNNING - jsFirstVisibleH1');
+                    h1Position = await _controller!
+                        .evaluateJavascript(source: jsFirstVisibleH1);
+                    // make sure it's an Int
+                    h1Position = h1Position.toInt();
+                  }
 
-                // Add the item to the box
-                final box = Boxes.getItems();
-                box.add(item);
+                  // Get a list of all fully visible <img>
+                  print('RUNNING RUNNING RUNNING RUNNING - jsAllVisibleImg2');
+                  print(DateTime.now());
+                  allVisibleImg = await _controller!
+                      .evaluateJavascript(source: jsAllVisibleImg2);
+                  print(
+                      'FINISHED FINISHED FINISHED FINISHED - jsAllVisibleImg2');
+                  print(DateTime.now());
+                  print('allVisibleImg: $allVisibleImg');
 
-                // Reset the shared launch properties in app state manager
-                Provider.of<AppStateManager>(context, listen: false)
-                    .resetShareLaunchProperties();
+                  // get teh type
+                  Type type = allVisibleImg.runtimeType;
+                  print(type);
 
-                // Navigate back to item screen
-                context.go('/');
-              } catch (e) {
-                print('DEBUG - this exception happened:');
-                print(e);
-                // Reset the shared launch properties in app state manager
-                Provider.of<AppStateManager>(context, listen: false)
-                    .resetShareLaunchProperties();
+                  // TODO - this was added for iOS as js eval brought
+                  // back map<Object?, Object>
+                  // convert the list of visible images to a map
+                  Map<String, dynamic> allVisibleImgMap =
+                      allVisibleImg.cast<String, dynamic>();
+                  print('allVisibleImgMap" $allVisibleImgMap');
 
-                // Go to the error screen
-                context.go(Routes.error.path);
+                  // Get the domain name
+                  String host = Uri.parse(passedURL).host;
+                  print('host from URL: $host');
+
+                  // Get all the item details
+                  var jsonData = getItemDetails(
+                      document: dom,
+                      host: host,
+                      numH1s: numOfH1s,
+                      h1Position: h1Position,
+                      allVisibleImages: allVisibleImgMap);
+
+                  // Create the item
+                  Item item = Item(
+                      title: jsonData['title'],
+                      imageURL: jsonData['imageURL'],
+                      price: jsonData['price']);
+
+                  // Add the item to the box
+                  final box = Boxes.getItems();
+                  box.add(item);
+
+                  // Reset the shared launch properties in app state manager
+                  Provider.of<AppStateManager>(context, listen: false)
+                      .resetShareLaunchProperties();
+
+                  // Navigate back to item screen
+                  context.go('/');
+                } catch (e) {
+                  print('DEBUG - this exception happened:');
+                  print(e);
+                  // Reset the shared launch properties in app state manager
+                  Provider.of<AppStateManager>(context, listen: false)
+                      .resetShareLaunchProperties();
+
+                  // Go to the error screen
+                  context.go(Routes.error.path);
+                }
+              } else {
+                print(
+                    'something shit happened that progress didn\'t get to 100');
               }
             },
           ),
