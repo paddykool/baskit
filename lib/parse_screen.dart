@@ -6,6 +6,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'boxes.dart';
+import 'models/baskit.dart';
 import 'models/item.dart';
 import 'package:provider/provider.dart';
 import 'package:baskit/models/app_state_manager.dart';
@@ -168,6 +169,21 @@ listOfImagesObj
     loadStopCount++;
   }
 
+  // use this to get the text for a new Baskit
+  late TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     String passedURL =
@@ -194,10 +210,10 @@ listOfImagesObj
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.go(Routes.item.path);
+          context.go(Routes.home.path);
         },
         child: Center(
-          child: Text('Items List'),
+          child: Text('Home Page'),
         ),
       ),
       body: Stack(
@@ -252,19 +268,6 @@ listOfImagesObj
               if (progressInsideLoadStop == 100) {
                 // Wrapping the whole thing in a try / catch as loads can go wrong
                 try {
-                  // TODO - add some sort of code to check ready state of each iFrame
-                  // BUT THIS MIGHT FAIL IF DOMAIN IS NOT THE SAME.... FIGURE THIS OUT
-                  // IFRAME CRAP.......
-                  // check if there are any iframes present and wait 3 seconds id there is
-                  // print('RUNNING RUNNING RUNNING RUNNING - jsGetIFrames');
-                  // String iFrames =
-                  //     await _controller!.evaluateJavascript(source: jsGetiFrames);
-                  // print("Contents of iFrames: $iFrames");
-                  // if (iFrames.isNotEmpty) {
-                  //   // wait 5 seconds
-                  //   await Future.delayed(Duration(seconds: 5));
-                  // }
-
                   // get all the html
                   print('RUNNING RUNNING RUNNING RUNNING - jsGetHTML');
                   String doc =
@@ -272,18 +275,6 @@ listOfImagesObj
 
                   // parse the html to get the dom
                   var dom = parse(doc);
-
-                  // // TODO IFrame crap
-                  // int numOfIFrames = dom.getElementsByTagName('iframe').length;
-                  // if (numOfIFrames > 0) {
-                  //   // wait 5 seconds
-                  //   await Future.delayed(Duration(seconds: 5));
-                  //
-                  //   String doc2 =
-                  //       await _controller!.evaluateJavascript(source: jsGetHTML);
-                  //
-                  //   print('Just waiting on doc 2');
-                  // }
 
                   // find out the number of h1's in the dom
                   var numOfH1s = dom.getElementsByTagName('h1').length;
@@ -339,22 +330,10 @@ listOfImagesObj
                       h1Position: h1Position,
                       allVisibleImages: allVisibleImgMap);
 
-                  // Create the item
-                  Item item = Item(
-                      title: jsonData['title'],
-                      imageURL: jsonData['imageURL'],
-                      price: jsonData['price']);
-
-                  // Add the item to the box
-                  final box = Boxes.getItems();
-                  box.add(item);
-
-                  // Reset the shared launch properties in app state manager
-                  Provider.of<AppStateManager>(context, listen: false)
-                      .resetShareLaunchProperties();
-
-                  // Navigate back to item screen
-                  context.go('/');
+                  // TODO - Now... what to do...
+                  // GOTO a new select baskit page
+                  context.go(
+                      '/selectbaskit?title=${jsonData['title']}&imageURL=${jsonData['imageURL']}&price=${jsonData['price']}');
                 } catch (e) {
                   print('DEBUG - this exception happened:');
                   print(e);
@@ -376,6 +355,96 @@ listOfImagesObj
       ),
     );
   }
+
+  // Future<String> baskitSelectDialog() async {
+  //   await showDialog<String>(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return SimpleDialog(
+  //         title: Text('Select Baskit'),
+  //         children: selectBaskitList(),
+  //       );
+  //     },
+  //   );
+  //
+  //   return Future.delayed(Duration(milliseconds: 3000), () => 'Balls');
+  // }
+  //
+  // List<Widget> selectBaskitList() {
+  //   // Get all the current baskit titles:
+  //   var box = Boxes.getBaskits();
+  //   List listOfBaskitKeys = box.keys.toList();
+  //
+  //   List listOfBaskitNames =
+  //       listOfBaskitKeys.map((key) => box.get(key)?.title).toList();
+  //
+  //   // Create a SimpleDialogOption for each baskit name
+  //   List<Widget> listOfOptionWidgets = listOfBaskitNames
+  //       .map(
+  //         (baskitName) => SimpleDialogOption(
+  //           child: Text(baskitName),
+  //           // TODO - Return the baskit name
+  //           // or create the actual item ???
+  //           // Will this return the baskit name ???
+  //           onPressed: () => Navigator.pop(context, baskitName),
+  //         ),
+  //       )
+  //       .toList();
+  //
+  //   // Add Option to create a baskit
+  //   listOfOptionWidgets.insert(
+  //       0,
+  //       SimpleDialogOption(
+  //         child: Text("Create a new Baskit"),
+  //         // Navigate to create new Baskit screen ?
+  //         onPressed: () => createBaskitDialog(),
+  //       ));
+  //
+  //   return listOfOptionWidgets;
+  // }
+
+  // Future<String> createBaskitDialog() async {
+  //   await showDialog<String>(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: Text('Enter New Baskit Name'),
+  //         // Text field with a submit button
+  //         content: TextField(
+  //           autofocus: true,
+  //           decoration: InputDecoration(hintText: 'Enter name of new Baskit'),
+  //           controller: controller,
+  //           // TODO - create a new baskit and return it's name
+  //           // This is if the user hits return on the keyboard
+  //           onSubmitted: (_) => null,
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             child: Text('Submit'),
+  //             // TODO - create a new baskit and return it's name
+  //             onPressed: () {
+  //               // createNewBaskit(controller.text);
+  //               // return controller.text;
+  //             },
+  //           )
+  //         ],
+  //       );
+  //     },
+  //   );
+  //
+  //   return Future.delayed(Duration(milliseconds: 3000), () => 'Balls');
+  // }
+
+  // void createNewBaskit(String newBaskitName) {
+  //   // Create a new Baskit
+  //   Baskit newBaskit = Baskit(title: newBaskitName);
+  //
+  //   // Create the new baskit in the Hive box
+  //   var box = Boxes.getBaskits();
+  //   box.add(newBaskit);
+  //
+  //   // Now... return the name of this new baskit....
+  // }
 }
 
 class DetailsLoadingWidget extends StatelessWidget {

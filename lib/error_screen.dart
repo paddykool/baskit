@@ -30,7 +30,7 @@ class ErrorScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.go(Routes.item.path);
+          context.go(Routes.home.path);
         },
         child: Center(
           child: Text('Items List'),

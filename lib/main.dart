@@ -1,6 +1,7 @@
 import 'package:baskit/models/app_state_manager.dart';
+import 'package:baskit/models/baskit.dart';
 import 'package:flutter/material.dart';
-import 'models/item.dart';
+import 'package:baskit/models/item.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -10,8 +11,9 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  Hive.registerAdapter(BaskitAdapter());
   Hive.registerAdapter(ItemAdapter());
-  await Hive.openBox<Item>('items');
+  await Hive.openBox<Baskit>('baskits');
 
   // initialise the shareURL properties
   // TODO try async await here
@@ -23,15 +25,15 @@ void main() async {
   // wait 4 seconds before setting isInitialised to true
   appStateManager.initialiseApp();
 
-  runApp(Baskit());
+  runApp(BaskitApp());
 }
 
-class Baskit extends StatefulWidget {
+class BaskitApp extends StatefulWidget {
   @override
-  State<Baskit> createState() => _BaskitState();
+  State<BaskitApp> createState() => _BaskitAppState();
 }
 
-class _BaskitState extends State<Baskit> {
+class _BaskitAppState extends State<BaskitApp> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppStateManager>(
@@ -48,7 +50,7 @@ class _BaskitState extends State<Baskit> {
 
   @override
   void dispose() {
-    Hive.box('items').close();
+    Hive.box('baskits').close();
     appStateManager.closeShareURLStream();
     super.dispose();
   }

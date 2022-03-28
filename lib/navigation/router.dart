@@ -1,4 +1,4 @@
-import 'package:baskit/item_screen.dart';
+import 'package:baskit/home_screen.dart';
 import 'package:baskit/models/app_state_manager.dart';
 import 'package:baskit/navigation/routes.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +9,16 @@ final goRouter = GoRouter(
   refreshListenable: appStateManager,
   routes: [
     Routes.splash,
-    Routes.item,
+    Routes.home,
     Routes.parse,
     Routes.error,
+    Routes.selectbaskit,
   ],
   redirect: (state) {
+    if (state.subloc == '/selectbaskit') {
+      return null;
+    }
+
     // opened by sharing logic
     if (appStateManager.openedBySharingURL) {
       print('state.location: ${state.location}');
@@ -22,6 +27,10 @@ final goRouter = GoRouter(
       if (state.subloc != Routes.parse.path) {
         return Routes.parse.path;
       }
+      return null;
+    }
+
+    if (state.subloc.contains('/baskit')) {
       return null;
     }
 
@@ -46,8 +55,12 @@ final goRouter = GoRouter(
         return null;
       }
 
-      if (state.subloc != Routes.item.path) {
-        return Routes.item.path;
+      // if (state.subloc.contains('/item/')) {
+      //   return null;
+      // }
+
+      if (state.subloc != Routes.home.path) {
+        return Routes.home.path;
       }
       return null;
     }
@@ -59,6 +72,6 @@ final goRouter = GoRouter(
     print('Error state: ${state.error}');
     // Showing the splash page on an error is a poor practice - but we'll
     // leave what page to show here as an exercise for the reader.
-    return ItemScreen.page(key: state.pageKey);
+    return HomeScreen.page(key: state.pageKey);
   },
 );

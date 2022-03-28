@@ -1,3 +1,4 @@
+import 'package:baskit/models/baskit.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
@@ -6,38 +7,40 @@ import 'boxes.dart';
 import 'models/item.dart';
 import 'navigation/routes.dart';
 
-class ItemScreen extends StatefulWidget {
-  const ItemScreen({Key? key}) : super(key: key);
+// TODO use a provider here to hold the baskit data so all widgets can access it
 
-  static Page page({LocalKey? key}) => MaterialPage(
+class BaskitScreen extends StatefulWidget {
+  final String baskitKey;
+
+  BaskitScreen({required this.baskitKey});
+
+  static Page page({LocalKey? key, required String baskitKey}) => MaterialPage(
         key: key,
-        child: ItemScreen(),
+        child: BaskitScreen(baskitKey: baskitKey),
       );
 
   @override
-  State<ItemScreen> createState() => _ItemScreenState();
+  State<BaskitScreen> createState() => _BaskitScreenState();
 }
 
-class _ItemScreenState extends State<ItemScreen> {
-  // @override
-  // void dispose() {
-  //   Hive.box('items').close();
-  //   super.dispose();
-  // }
+class _BaskitScreenState extends State<BaskitScreen> {
+  late final Baskit baskit;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get the basket from hive
+    baskit = Boxes.getBaskits().get(int.parse(widget.baskitKey))!;
+    // baskit = Boxes.getBaskits().get(0)!;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Baskit Item Screen'),
+        title: Text('${baskit.title} Baskit Item Screen'),
       ),
-      body: ValueListenableBuilder<Box<Item>>(
-        valueListenable: Boxes.getItems().listenable(),
-        builder: (context, box, _) {
-          final items = box.values.toList().cast<Item>();
-          return buildItemCardList(items);
-        },
-      ),
+      body: buildItemCardList(baskit.itemsList),
     );
   }
 }
@@ -74,14 +77,17 @@ Widget buildItemCardList(List<Item> items) {
 
 Future<void> clearItemBox() async {
   print('inside clearItemBox()');
-  final box = Boxes.getItems();
-  await box.clear();
+  // TODO - clear down the list<item> in the baskit
+  // final box = Boxes.getItems();
+  // await box.clear();
 }
 
 class ItemCard extends StatelessWidget {
   final Item item;
 
-  ItemCard({required this.item});
+  ItemCard({
+    required this.item,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +106,12 @@ class ItemCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(item.price),
+        trailing: GestureDetector(
+          onTap: () {
+            // Remove the item from the list<items>
+          },
+          child: Icon(Icons.delete),
+        ),
       ),
     );
   }
