@@ -1,3 +1,4 @@
+import 'package:baskit/models/baskit_db_manager.dart';
 import 'package:baskit/parse_document.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart';
@@ -331,9 +332,19 @@ listOfImagesObj
                       allVisibleImages: allVisibleImgMap);
 
                   // TODO - Now... what to do...
+                  // create the new Item
+                  Item newItem = Item(
+                    title: jsonData['title'],
+                    imageURL: jsonData['imageURL'],
+                    price: jsonData['price'],
+                  );
+
+                  // Store the new Item in the Data Manager until a baskit is selected
+                  Provider.of<BaskitDBManager>(context, listen: false)
+                      .storeItemToDataManager(newItem);
+
                   // GOTO a new select baskit page
-                  context.go(
-                      '/selectbaskit?title=${jsonData['title']}&imageURL=${jsonData['imageURL']}&price=${jsonData['price']}');
+                  context.go('/selectbaskit');
                 } catch (e) {
                   print('DEBUG - this exception happened:');
                   print(e);

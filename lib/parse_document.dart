@@ -91,7 +91,7 @@ Map<String, dynamic> getItemDetails({
   // Then return the first text that has a € or £ symbol
   String textContainingPrice = getParentText(element: actualImageElement);
 
-  print('parentTextContainingPrice: $textContainingPrice');
+  // print('parentTextContainingPrice: $textContainingPrice');
 
   // find the first element that has a '€' or '£' or '$' at the start
   // Maybe needs firstmatchOrNull ??

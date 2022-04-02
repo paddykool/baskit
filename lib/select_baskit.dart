@@ -8,22 +8,14 @@ import 'models/app_state_manager.dart';
 import 'models/baskit.dart';
 import 'package:go_router/go_router.dart';
 
+import 'models/baskit_db_manager.dart';
+
 class SelectBaskit extends StatefulWidget {
-  final String title;
-  final String imageURL;
-  final String price;
+  const SelectBaskit({Key? key}) : super(key: key);
 
-  SelectBaskit(
-      {required this.title, required this.imageURL, required this.price});
-
-  static Page page(
-          {LocalKey? key,
-          required String title,
-          required String imageURL,
-          required String price}) =>
-      MaterialPage(
+  static Page page({LocalKey? key}) => MaterialPage(
         key: key,
-        child: SelectBaskit(title: title, imageURL: imageURL, price: price),
+        child: SelectBaskit(),
       );
 
   @override
@@ -31,205 +23,245 @@ class SelectBaskit extends StatefulWidget {
 }
 
 class _SelectBaskitState extends State<SelectBaskit> {
-  // use this to get the text for a new Baskit
-  final myController = TextEditingController();
-
-  @override
-  void dispose() {
-    myController.dispose();
-    super.dispose();
-  }
+  // // use this to get the text for a new Baskit
+  // final myController = TextEditingController();
+  //
+  // @override
+  // void dispose() {
+  //   myController.dispose();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Select Baskit'),
       ),
-      // TODO - This will cause a popup to enter new Baskit Name
       floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
         onPressed: () async {
-          // Show shitty Dialog
-          String? newBaskitName = await createBaskitDialog(context);
+          // Show dialog to get the name of new Baskit
+          // String? newBaskitName = await createBaskitDialog(context);
+          await showDialog<String>(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return EnterBaskitNameDialog();
+              });
 
-          // Create the Item
-          Item item = Item(
-            title: widget.title,
-            imageURL: widget.imageURL,
-            price: widget.price,
-          );
+          String newBaskitName =
+              Provider.of<BaskitDBManager>(context, listen: false)
+                  .getNewBaskitName();
+          // Get the new Item from the Data manager
+          Item item = Provider.of<BaskitDBManager>(context, listen: false)
+              .getStoredNewItem();
 
           // create the new baskit
           List<Item> itemList = [item];
-          Baskit newBaskit = Baskit(title: newBaskitName!, itemsList: itemList);
-          var box = Boxes.getBaskits();
-          int whatIsThisInt = await box.add(newBaskit);
+          Baskit newBaskit = Baskit(title: newBaskitName, itemsList: itemList);
+          var indexOfNewBaskit = await baskitDBManager.addBaskit(newBaskit);
           print(
-              'This is the Int after creating the new empty Baskit: $whatIsThisInt');
+              'This is the Int after creating the new empty Baskit: $indexOfNewBaskit');
 
           // Reset the shared launch properties in app state manager
           Provider.of<AppStateManager>(context, listen: false)
               .resetShareLaunchProperties();
 
           // Go to the item screen for this new baskit
-          // I hope that this is actually the key for the baskit we just created
-          context.go('/baskit/$whatIsThisInt');
+          context.go('/baskit/$indexOfNewBaskit');
         },
       ),
-      body: ValueListenableBuilder<Box<Baskit>>(
-        valueListenable: Boxes.getBaskits().listenable(),
-        builder: (context, box, _) {
-          final baskits = box.values.toList().cast<Baskit>();
-          // return buildBaskitCardList(baskits);
-          if (baskits.isEmpty) {
-            return Center(
-              child: Text(
-                  'No Baskits created yet. Please use button to create a baskit'),
-            );
-          } else {
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemCount: baskits.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final baskit = baskits[index];
-                      return Card(
-                        margin: EdgeInsets.all(10.0),
-                        child: ListTile(
-                          // TODO - Save the item to this baskit
-                          onTap: () {
-                            // Create the item
-                            Item item = Item(
-                              title: widget.title,
-                              imageURL: widget.imageURL,
-                              price: widget.price,
-                            );
-                            //save the item to the Baskit
-                            baskit.itemsList.add(item);
-                            baskit.save();
-                            // Reset the shared launch properties in app state manager
-                            Provider.of<AppStateManager>(context, listen: false)
-                                .resetShareLaunchProperties();
-                            context.go('/baskit/${baskit.key}');
-                          },
-                          title: Text(
-                            baskit.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              ],
-            );
-          }
-        },
-      ),
+      body: BaskitCardList(),
     );
-  }
-
-  Future<String?> createBaskitDialog(BuildContext context) async {
-    String? newBaskitName;
-
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Enter New Baskit Name'),
-          // Text field with a submit button
-          content: TextField(
-            autofocus: true,
-            decoration: InputDecoration(hintText: 'Enter name of new Baskit'),
-            controller: myController,
-            // TODO - create a new baskit and return it's name
-            // This is if the user hits return on the keyboard
-            onSubmitted: (_) => null,
-          ),
-          actions: [
-            TextButton(
-              child: Text('Submit'),
-              // TODO - create a new baskit and return it's name
-              onPressed: () {
-                newBaskitName = myController.text;
-                Navigator.pop(context);
-              },
-            )
-          ],
-        );
-      },
-    );
-
-    return newBaskitName;
   }
 }
 
-// Widget buildBaskitCardList(List<Baskit> baskits) {
-//   if (baskits.isEmpty) {
-//     return Center(
-//       child: Text('No Baskits created yet. Please use button to create a baskit'),
-//     );
-//   } else {
-//     return Column(
-//       children: [
-//         Expanded(
-//           child: ListView.builder(
-//             scrollDirection: Axis.vertical,
-//             shrinkWrap: true,
-//             itemCount: baskits.length,
-//             itemBuilder: (BuildContext context, int index) {
-//               final baskit = baskits[index];
-//               return BaskitCard(baskit: baskit);
-//             },
-//           ),
-//         )
-//       ],
-//     );
-//   }
-// }
+class BaskitCardList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
 
-// class BaskitCard extends StatelessWidget {
-//   final Baskit baskit;
+    if (baskitDBManager.baskitCount == 0) {
+      return Center(
+        child: Text(
+            'No Baskits created yet. Please Create a new baskit using the button below'),
+      );
+    } else {
+      return Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemCount: baskitDBManager.baskitCount,
+              itemBuilder: (BuildContext context, int index) {
+                return BaskitCard(index: index);
+              },
+            ),
+          )
+        ],
+      );
+    }
+  }
+}
+
+class BaskitCard extends StatelessWidget {
+  final int index;
+
+  BaskitCard({required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
+    // get the baskit title
+    String baskitTitle = baskitDBManager.getBaskit(index).title;
+
+    return Card(
+      margin: EdgeInsets.all(10.0),
+      child: ListTile(
+        onTap: () async {
+          // Add the item to the Baskit at this index
+          // Get the baskit at this index...
+          await baskitDBManager.addNewItemToBaskit(index);
+
+          // Reset the shared launch properties in app state manager
+          Provider.of<AppStateManager>(context, listen: false)
+              .resetShareLaunchProperties();
+
+          context.go('/baskit/$index');
+        },
+        title: Text(
+          baskitTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+class EnterBaskitNameDialog extends StatefulWidget {
+  const EnterBaskitNameDialog({Key? key}) : super(key: key);
+
+  @override
+  _EnterBaskitNameDialogState createState() => _EnterBaskitNameDialogState();
+}
+
+class _EnterBaskitNameDialogState extends State<EnterBaskitNameDialog> {
+  // use this to get the text for a new Baskit
+  late final TextEditingController textController;
+
+  // error variable - TODO change this to invalid ?
+  bool _validBaskitname = false;
+
+  @override
+  void initState() {
+    super.initState();
+    textController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    textController.dispose();
+    super.dispose();
+  }
+
+  void submit() {
+    // Write the new name to the Data manager
+    if (!_validBaskitname) {
+      Provider.of<BaskitDBManager>(context, listen: false)
+          .setNewBaskitName(textController.text);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Enter New Baskit Name'),
+      // Text field with a submit button
+      content: TextField(
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: 'Enter name of new Baskit',
+          errorText: _validBaskitname ? 'Name cannot be empty' : null,
+        ),
+        controller: textController,
+        // This is if the user hits return on the keyboard
+        // This should call a function - the same function
+        // as onPressed for submit button
+        // TODO add the below
+        onSubmitted: (_) {
+          setState(() {
+            textController.text.isEmpty
+                ? _validBaskitname = true
+                : _validBaskitname = false;
+          });
+          if (!_validBaskitname) {
+            submit();
+          }
+        },
+      ),
+      actions: [
+        TextButton(
+            child: Text('Submit'),
+            onPressed: () {
+              setState(() {
+                textController.text.isEmpty
+                    ? _validBaskitname = true
+                    : _validBaskitname = false;
+              });
+              if (!_validBaskitname) {
+                submit();
+              }
+            })
+      ],
+    );
+  }
+}
+
+// // TODO - turn this into a class and put the Text controller inside it
+// Future<String?> createBaskitDialog(BuildContext context) async {
+//   String? newBaskitName;
 //
-//   BaskitCard({required this.baskit});
+//   await showDialog<String>(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return AlertDialog(
+//         title: Text('Enter New Baskit Name'),
+//         // Text field with a submit button
+//         content: TextField(
+//           autofocus: true,
+//           decoration: InputDecoration(hintText: 'Enter name of new Baskit'),
+//           // TODO Can the controller be inside of this 'createBaskitDialog' widget?
+//           // Maybe if I make this widget a stateful widget???
+//           controller: myController,
 //
-//   @override
-//   Widget build(BuildContext context) {
-//     return Card(
-//       margin: EdgeInsets.all(10.0),
-//       child: ListTile(
-//         // TODO - Save the item to this baskit
-//         onTap: () {
-//
-//         },
-//         title: Text(
-//           baskit.title,
-//           maxLines: 2,
-//           overflow: TextOverflow.ellipsis,
+//           // This is if the user hits return on the keyboard
+//           onSubmitted: (_) => null,
 //         ),
-//       ),
-//     );
-//   }
-// }
-
-// class _BaskitScreenState extends State<BaskitScreen> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Baskit Item Screen'),
-//       ),
-//       body: ValueListenableBuilder<Box<Baskit>>(
-//         valueListenable: Boxes.getBaskits().listenable(),
-//         builder: (context, box, _) {
-//           final baskits = box.values.toList().cast<Baskit>();
-//           return buildBaskitCardList(baskits);
-//         },
-//       ),
-//     );
-//   }
+//         actions: [
+//           TextButton(
+//             child: Text('Submit'),
+//             // TODO - create a new baskit and return it's name
+//             onPressed: () {
+//               newBaskitName = myController.text;
+//               Navigator.pop(context);
+//             },
+//           )
+//         ],
+//       );
+//     },
+//   );
+//
+//   // TODO - turn this whole thing into a class and
+//   // write the name of the new baskit to a field in it.
+//   return newBaskitName;
 // }

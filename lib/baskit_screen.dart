@@ -3,75 +3,92 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'boxes.dart';
+import 'models/baskit_db_manager.dart';
 import 'models/item.dart';
 import 'navigation/routes.dart';
 
-// TODO use a provider here to hold the baskit data so all widgets can access it
+class BaskitScreen extends StatelessWidget {
+  final int baskitIndex;
 
-class BaskitScreen extends StatefulWidget {
-  final String baskitKey;
+  BaskitScreen({required this.baskitIndex});
 
-  BaskitScreen({required this.baskitKey});
-
-  static Page page({LocalKey? key, required String baskitKey}) => MaterialPage(
+  static Page page({LocalKey? key, required int baskitIndex}) => MaterialPage(
         key: key,
-        child: BaskitScreen(baskitKey: baskitKey),
+        child: BaskitScreen(baskitIndex: baskitIndex),
       );
 
-  @override
-  State<BaskitScreen> createState() => _BaskitScreenState();
-}
-
-class _BaskitScreenState extends State<BaskitScreen> {
-  late final Baskit baskit;
-
-  @override
-  void initState() {
-    super.initState();
-    // Get the basket from hive
-    baskit = Boxes.getBaskits().get(int.parse(widget.baskitKey))!;
-    // baskit = Boxes.getBaskits().get(0)!;
-  }
+  // late final Baskit baskit;
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // Get the basket from hive
+  //   baskit = BaskitDBManager.getBaskitBox().get(int.parse(widget.baskitKey));
+  //   // baskit = Boxes.getBaskits().get(0)!;
+  // }
 
   @override
   Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
+    // Set the current Baskit
+    baskitDBManager.setCurrentBaskit(baskitIndex);
+    final Baskit currentBaskit = baskitDBManager.getBaskit(baskitIndex);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${baskit.title} Baskit Item Screen'),
+        title: Text('${currentBaskit.title} Item Screen'),
       ),
-      body: buildItemCardList(baskit.itemsList),
+      body: BuildItemCardList(baskitIndex: baskitIndex),
     );
   }
 }
 
-Widget buildItemCardList(List<Item> items) {
-  if (items.isEmpty) {
-    return Center(
-      child: Text('No items yet'),
-    );
-  } else {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            clearItemBox();
-          },
-          child: Text('Clear list'),
-        ),
-        Expanded(
-          child: ListView.builder(
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            itemCount: items.length,
-            itemBuilder: (BuildContext context, int index) {
-              final item = items[index];
-              return ItemCard(item: item);
-            },
-          ),
-        )
-      ],
-    );
+class BuildItemCardList extends StatelessWidget {
+  final int baskitIndex;
+
+  BuildItemCardList({required this.baskitIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    final baskitDBManager = Provider.of<BaskitDBManager>(context, listen: true);
+
+    final int currentBaskitIndex = baskitDBManager.getCurrentBaskit();
+    final Baskit currentBaskit = baskitDBManager.getBaskit(currentBaskitIndex);
+
+    // Get the list of items from the baskit
+    List<Item> items = currentBaskit.itemsList;
+
+    if (items.isEmpty) {
+      return Center(
+        child: Text('No items yet'),
+      );
+    } else {
+      return Column(
+        children: [
+          // ElevatedButton(
+          //   onPressed: () {
+          //     // TODO Fuck
+          //   },
+          //   child: Text('Clear list'),
+          // ),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemCount: items.length,
+              itemBuilder: (BuildContext context, int index) {
+                // final item = items[index];
+                return ItemCard(itemIndex: index);
+              },
+            ),
+          )
+        ],
+      );
+    }
   }
 }
 
@@ -83,14 +100,20 @@ Future<void> clearItemBox() async {
 }
 
 class ItemCard extends StatelessWidget {
-  final Item item;
+  final int itemIndex;
 
-  ItemCard({
-    required this.item,
-  });
+  ItemCard({required this.itemIndex});
 
   @override
   Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
+    final int currentBaskitIndex = baskitDBManager.getCurrentBaskit();
+    final Baskit currentBaskit = baskitDBManager.getBaskit(currentBaskitIndex);
+
+    final Item item = currentBaskit.itemsList[itemIndex];
+
     return Card(
       margin: EdgeInsets.all(10.0),
       child: ListTile(
@@ -108,7 +131,8 @@ class ItemCard extends StatelessWidget {
         subtitle: Text(item.price),
         trailing: GestureDetector(
           onTap: () {
-            // Remove the item from the list<items>
+            // TODO Remove the item from the list<items>
+            baskitDBManager.deleteItemFromBaskit(itemIndex);
           },
           child: Icon(Icons.delete),
         ),

@@ -4,9 +4,11 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'boxes.dart';
 import 'models/baskit.dart';
+import 'models/baskit_db_manager.dart';
 import 'navigation/routes.dart';
+import 'package:provider/provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   static Page page({LocalKey? key}) => MaterialPage(
@@ -15,71 +17,91 @@ class HomeScreen extends StatefulWidget {
       );
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  @override
   Widget build(BuildContext context) {
+    // Populate the BaskitDBManager's list of baskits from the Hive DB
+    // final baskitDBManager =
+    //     Provider.of<BaskitDBManager>(context, listen: false);
+    // baskitDBManager.refreshBaskitList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Baskits Screen'),
       ),
-      body: ValueListenableBuilder<Box<Baskit>>(
-        valueListenable: Boxes.getBaskits().listenable(),
-        builder: (context, box, _) {
-          final baskits = box.values.toList().cast<Baskit>();
-          return buildBaskitCardList(baskits);
-        },
-      ),
+      body: BaskitCardList(),
+
+      // body: ValueListenableBuilder<Box<Baskit>>(
+      //   valueListenable: BaskitDBManager.getBaskitBox().listenable(),
+      //   builder: (context, box, _) {
+      //     final baskits = box.values.toList().cast<Baskit>();
+      //     return buildBaskitCardList(baskits);
+      //   },
+      // ),
     );
   }
 }
 
-Widget buildBaskitCardList(List<Baskit> baskits) {
-  if (baskits.isEmpty) {
-    return Center(
-      child: Text('No Baskits created yet'),
-    );
-  } else {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            itemCount: baskits.length,
-            itemBuilder: (BuildContext context, int index) {
-              final baskit = baskits[index];
-              return BaskitCard(baskit: baskit);
-            },
-          ),
-        )
-      ],
-    );
+class BaskitCardList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // TODO - Probably nicer to have consumer here
+    final baskitDBManager = Provider.of<BaskitDBManager>(context, listen: true);
+
+    if (baskitDBManager.baskitCount == 0) {
+      return Center(
+        child: Text('No Baskits created yet'),
+      );
+    } else {
+      return Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemCount: baskitDBManager.baskitCount,
+              itemBuilder: (BuildContext context, int index) {
+                return BaskitCard(index: index);
+              },
+            ),
+          )
+        ],
+      );
+    }
   }
 }
 
 class BaskitCard extends StatelessWidget {
-  final Baskit baskit;
+  final int index;
 
-  BaskitCard({required this.baskit});
+  BaskitCard({required this.index});
 
+  // TODO - maybe have consumer here.. not in the widget above
   @override
   Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
+    // get the baskit title
+    String baskitTitle = baskitDBManager.getBaskit(index).title;
+
     return Card(
       margin: EdgeInsets.all(10.0),
       child: ListTile(
         onTap: () {
-          final key = baskit.key.toString();
-          print('The key of the baskit is: $key');
-          // go to the item screen - pass the baskit so it has the item list
-          context.go('/baskit/$key');
+          // Set the current baskit to be the index of this baskit
+          baskitDBManager.setCurrentBaskit(index);
+          context.go('/baskit/$index');
         },
         title: Text(
-          baskit.title,
+          baskitTitle,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+        ),
+        trailing: GestureDetector(
+          onTap: () {
+            // TODO Remove the item from the list<items>
+            baskitDBManager.deleteBaskit(index);
+          },
+          child: Icon(Icons.delete),
         ),
       ),
     );

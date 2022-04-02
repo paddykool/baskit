@@ -18,12 +18,11 @@ class Routes {
     routes: [
       GoRoute(
           name: 'baskit',
-          path: 'baskit/:baskitKey',
+          path: 'baskit/:baskitIndex',
           pageBuilder: (BuildContext context, GoRouterState state) {
-            var baskitKeyPassedInState = state.params['baskitKey'];
-            print(
-                'this is the baskit key in the state: $baskitKeyPassedInState');
-            return BaskitScreen.page(baskitKey: baskitKeyPassedInState!);
+            var baskitIndex = int.parse(state.params['baskitIndex']!);
+            print('this is the baskit index in the state: $baskitIndex');
+            return BaskitScreen.page(baskitIndex: baskitIndex);
           })
     ],
   );
@@ -58,14 +57,8 @@ class Routes {
   static final selectbaskit = GoRoute(
     path: '/selectbaskit',
     pageBuilder: (BuildContext context, GoRouterState state) {
-      final title = state.queryParams['title'] ?? "???";
-      final imageURL = state.queryParams['imageURL'] ?? "???";
-      final price = state.queryParams['price'] ?? "???";
       return SelectBaskit.page(
         key: state.pageKey,
-        title: title,
-        imageURL: imageURL,
-        price: price,
       );
     },
   );
