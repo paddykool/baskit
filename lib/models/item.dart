@@ -13,5 +13,17 @@ class Item extends HiveObject {
   @HiveField(2)
   String price;
 
-  Item({required this.title, required this.imageURL, required this.price});
+  @HiveField(3)
+  String url;
+
+  @HiveField(4)
+  String host;
+
+  Item({
+    required this.title,
+    required this.imageURL,
+    required this.price,
+    required this.url,
+    required this.host,
+  });
 }

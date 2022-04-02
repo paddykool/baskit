@@ -171,6 +171,8 @@ listOfImagesObj
   }
 
   // use this to get the text for a new Baskit
+  // TODO this can be removed since dialog haas own class now
+  // I think....
   late TextEditingController controller;
 
   @override
@@ -337,6 +339,8 @@ listOfImagesObj
                     title: jsonData['title'],
                     imageURL: jsonData['imageURL'],
                     price: jsonData['price'],
+                    host: host,
+                    url: parsedURL.toString(),
                   );
 
                   // Store the new Item in the Data Manager until a baskit is selected

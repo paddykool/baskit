@@ -19,9 +19,14 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Populate the BaskitDBManager's list of baskits from the Hive DB
-    // final baskitDBManager =
-    //     Provider.of<BaskitDBManager>(context, listen: false);
-    // baskitDBManager.refreshBaskitList();
+    // TODO - take another look at this
+    // TODO - if the app hot restarts or opens from paused then the list in the
+    // TODO - data manager is not populated... and is empty even if Hive DB haas records
+    // TODO - main init() doesn't get run again...
+    // TODO - so maybe have populateBaskitList() run onResume() somewhere....
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+    baskitDBManager.populateBaskitList();
 
     return Scaffold(
       appBar: AppBar(

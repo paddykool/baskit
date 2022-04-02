@@ -8,6 +8,7 @@ import 'boxes.dart';
 import 'models/baskit_db_manager.dart';
 import 'models/item.dart';
 import 'navigation/routes.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BaskitScreen extends StatelessWidget {
   final int baskitIndex;
@@ -69,6 +70,7 @@ class BuildItemCardList extends StatelessWidget {
     } else {
       return Column(
         children: [
+          // TODO - clear the whole list - probably not needed
           // ElevatedButton(
           //   onPressed: () {
           //     // TODO Fuck
@@ -104,6 +106,10 @@ class ItemCard extends StatelessWidget {
 
   ItemCard({required this.itemIndex});
 
+  void _openURL(String url) async {
+    if (!await launch(url, forceSafariVC: false)) throw 'Could not launch $url';
+  }
+
   @override
   Widget build(BuildContext context) {
     final baskitDBManager =
@@ -117,18 +123,36 @@ class ItemCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.all(10.0),
       child: ListTile(
-        leading: Image.network(
-          item.imageURL,
-          errorBuilder: (context, exception, stackTrace) {
-            return Image.asset('assets/images/not_found.png');
+        leading: GestureDetector(
+          onTap: () {
+            final url = item.url;
+            _openURL(url);
           },
+          child: Image.network(
+            item.imageURL,
+            errorBuilder: (context, exception, stackTrace) {
+              return Image.asset('assets/images/not_found.png');
+            },
+          ),
         ),
-        title: Text(
-          item.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        title: GestureDetector(
+          onTap: () {
+            final url = item.url;
+            _openURL(url);
+          },
+          child: Text(
+            item.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        subtitle: Text(item.price),
+        subtitle: GestureDetector(
+          onTap: () {
+            final url = item.url;
+            _openURL(url);
+          },
+          child: Text(item.price + "   " + item.host),
+        ),
         trailing: GestureDetector(
           onTap: () {
             // TODO Remove the item from the list<items>

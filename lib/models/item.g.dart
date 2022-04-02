@@ -20,19 +20,25 @@ class ItemAdapter extends TypeAdapter<Item> {
       title: fields[0] as String,
       imageURL: fields[1] as String,
       price: fields[2] as String,
+      url: fields[3] as String,
+      host: fields[4] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Item obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
       ..write(obj.imageURL)
       ..writeByte(2)
-      ..write(obj.price);
+      ..write(obj.price)
+      ..writeByte(3)
+      ..write(obj.url)
+      ..writeByte(4)
+      ..write(obj.host);
   }
 
   @override
