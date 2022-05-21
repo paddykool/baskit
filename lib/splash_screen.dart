@@ -21,8 +21,8 @@ class SplashScreen extends StatelessWidget {
             ),
             SizedBox(height: 100.0),
             Text(
-              'This is the Splash screen',
-              style: TextStyle(fontSize: 14.0),
+              'Welcome To Baskit App',
+              style: TextStyle(fontSize: 32.0),
             ),
           ],
         ),

@@ -9,6 +9,7 @@ import 'models/baskit_db_manager.dart';
 import 'models/item.dart';
 import 'navigation/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:collection/collection.dart';
 
 class BaskitScreen extends StatelessWidget {
   final int baskitIndex;
@@ -68,28 +69,40 @@ class BuildItemCardList extends StatelessWidget {
         child: Text('No items yet'),
       );
     } else {
-      return Column(
-        children: [
-          // TODO - clear the whole list - probably not needed
-          // ElevatedButton(
-          //   onPressed: () {
-          //     // TODO Fuck
-          //   },
-          //   child: Text('Clear list'),
-          // ),
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: items.length,
-              itemBuilder: (BuildContext context, int index) {
-                // final item = items[index];
-                return ItemCard(itemIndex: index);
-              },
-            ),
-          )
-        ],
+      return GridView.count(
+        childAspectRatio: MediaQuery.of(context).size.height / 1300,
+        crossAxisCount: 2,
+        // TODO is there a better way to iterate over the baskit list ?
+        children: items
+            .mapIndexed(
+              (index, _) => ItemCard(
+                itemIndex: index,
+              ),
+            )
+            .toList(),
       );
+      // return Column(
+      //   children: [
+      //     // TODO - clear the whole list - probably not needed
+      //     // ElevatedButton(
+      //     //   onPressed: () {
+      //     //     // TODO Fuck
+      //     //   },
+      //     //   child: Text('Clear list'),
+      //     // ),
+      //     Expanded(
+      //       child: ListView.builder(
+      //         scrollDirection: Axis.vertical,
+      //         shrinkWrap: true,
+      //         itemCount: items.length,
+      //         itemBuilder: (BuildContext context, int index) {
+      //           // final item = items[index];
+      //           return ItemCard(itemIndex: index);
+      //         },
+      //       ),
+      //     )
+      //   ],
+      // );
     }
   }
 }
@@ -122,45 +135,117 @@ class ItemCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.all(10.0),
-      child: ListTile(
-        leading: GestureDetector(
-          onTap: () {
-            final url = item.url;
-            _openURL(url);
-          },
-          child: Image.network(
-            item.imageURL,
-            errorBuilder: (context, exception, stackTrace) {
-              return Image.asset('assets/images/not_found.png');
-            },
+      child: Column(
+        // mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            flex: 2,
+            child: GestureDetector(
+              onTap: () {
+                final url = item.url;
+                _openURL(url);
+              },
+              child: Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
-        ),
-        title: GestureDetector(
-          onTap: () {
-            final url = item.url;
-            _openURL(url);
-          },
-          child: Text(
-            item.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          Expanded(
+            flex: 5,
+            child: GestureDetector(
+              onTap: () {
+                final url = item.url;
+                _openURL(url);
+              },
+              child: Image.network(
+                item.imageURL,
+                errorBuilder: (context, exception, stackTrace) {
+                  return Image.asset('assets/images/not_found.png');
+                },
+              ),
+            ),
           ),
-        ),
-        subtitle: GestureDetector(
-          onTap: () {
-            final url = item.url;
-            _openURL(url);
-          },
-          child: Text(item.price + "   " + item.host),
-        ),
-        trailing: GestureDetector(
-          onTap: () {
-            // TODO Remove the item from the list<items>
-            baskitDBManager.deleteItemFromBaskit(itemIndex);
-          },
-          child: Icon(Icons.delete),
-        ),
+          Expanded(
+            flex: 1,
+            child: SizedBox(
+              height: 5.0,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: GestureDetector(
+              onTap: () {
+                final url = item.url;
+                _openURL(url);
+              },
+              child: Text(item.price + "   " + item.host),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+              padding: EdgeInsets.only(right: 7.0),
+              alignment: Alignment.centerRight,
+              // TODO - put a row in here so that the area not the icon will
+              // TODO  bring to baskit screen
+              child: GestureDetector(
+                onTap: () {
+                  // TODO Remove the item from the list<items>
+                  baskitDBManager.deleteItemFromBaskit(itemIndex);
+                },
+                child: Icon(
+                  Icons.delete,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
+
+    // return Card(
+    //   margin: EdgeInsets.all(10.0),
+    //   child: ListTile(
+    //     leading: GestureDetector(
+    //       onTap: () {
+    //         final url = item.url;
+    //         _openURL(url);
+    //       },
+    //       child: Image.network(
+    //         item.imageURL,
+    //         errorBuilder: (context, exception, stackTrace) {
+    //           return Image.asset('assets/images/not_found.png');
+    //         },
+    //       ),
+    //     ),
+    //     title: GestureDetector(
+    //       onTap: () {
+    //         final url = item.url;
+    //         _openURL(url);
+    //       },
+    //       child: Text(
+    //         item.title,
+    //         maxLines: 2,
+    //         overflow: TextOverflow.ellipsis,
+    //       ),
+    //     ),
+    //     subtitle: GestureDetector(
+    //       onTap: () {
+    //         final url = item.url;
+    //         _openURL(url);
+    //       },
+    //       child: Text(item.price + "   " + item.host),
+    //     ),
+    //     trailing: GestureDetector(
+    //       onTap: () {
+    //         // TODO Remove the item from the list<items>
+    //         baskitDBManager.deleteItemFromBaskit(itemIndex);
+    //       },
+    //       child: Icon(Icons.delete),
+    //     ),
+    //   ),
+    // );
   }
 }

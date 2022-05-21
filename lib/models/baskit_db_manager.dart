@@ -128,6 +128,10 @@ class BaskitDBManager extends ChangeNotifier {
   String getNewBaskitName() {
     return _newBaskitName!;
   }
+
+  List<Baskit> getBaskitList() {
+    return _baskits;
+  }
 }
 
 final BaskitDBManager baskitDBManager = BaskitDBManager();
