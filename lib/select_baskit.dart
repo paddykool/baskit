@@ -7,8 +7,8 @@ import 'boxes.dart';
 import 'models/app_state_manager.dart';
 import 'models/baskit.dart';
 import 'package:go_router/go_router.dart';
-
 import 'models/baskit_db_manager.dart';
+import 'package:collection/collection.dart';
 
 class SelectBaskit extends StatefulWidget {
   const SelectBaskit({Key? key}) : super(key: key);
@@ -83,30 +83,138 @@ class _SelectBaskitState extends State<SelectBaskit> {
 class BaskitCardList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final baskitDBManager =
-        Provider.of<BaskitDBManager>(context, listen: false);
+    // TODO - Probably nicer to have <Consumer> here
+    final baskitDBManager = Provider.of<BaskitDBManager>(context, listen: true);
 
     if (baskitDBManager.baskitCount == 0) {
       return Center(
-        child: Text(
-            'No Baskits created yet. Please Create a new baskit using the button below'),
+        child: Text('No Baskits created yet'),
       );
     } else {
       return Column(
         children: [
+          Padding(
+            padding: EdgeInsets.all(15.0),
+            child: Text(
+              "Please Select a Baskit for the item or create a new Basakit with the Action Button below!",
+              style: TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+          ),
           Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: baskitDBManager.baskitCount,
-              itemBuilder: (BuildContext context, int index) {
-                return BaskitCard(index: index);
-              },
+            child: GridView.count(
+              crossAxisCount: 2,
+              // TODO is there a better way to iterate over the baskit list ?
+              children: baskitDBManager
+                  .getBaskitList()
+                  .mapIndexed(
+                    (index, _) => NewBaskitCard(
+                      index: index,
+                    ),
+                  )
+                  .toList(),
             ),
           )
         ],
       );
+      // final baskitDBManager =
+      //     Provider.of<BaskitDBManager>(context, listen: false);
+      //
+      // if (baskitDBManager.baskitCount == 0) {
+      //   return Center(
+      //     child: Text(
+      //         'No Baskits created yet. Please Create a new baskit using the button below'),
+      //   );
+      // } else {
+      //   return Column(
+      //     children: [
+      //       Expanded(
+      //         child: ListView.builder(
+      //           scrollDirection: Axis.vertical,
+      //           shrinkWrap: true,
+      //           itemCount: baskitDBManager.baskitCount,
+      //           itemBuilder: (BuildContext context, int index) {
+      //             return BaskitCard(index: index);
+      //           },
+      //         ),
+      //       )
+      //     ],
+      //   );
     }
+  }
+}
+
+class NewBaskitCard extends StatelessWidget {
+  final int index;
+
+  NewBaskitCard({required this.index});
+
+  // TODO - maybe have consumer here.. not in the widget above
+  @override
+  Widget build(BuildContext context) {
+    final baskitDBManager =
+        Provider.of<BaskitDBManager>(context, listen: false);
+
+    // get the baskit title
+    String baskitTitle = baskitDBManager.getBaskit(index).title;
+
+    return Card(
+      margin: EdgeInsets.all(10.0),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 1,
+            child: GestureDetector(
+              onTap: () async {
+                // Add the item to the Baskit at this index
+                // Get the baskit at this index...
+                await baskitDBManager.addNewItemToBaskit(index);
+
+                // Reset the shared launch properties in app state manager
+                Provider.of<AppStateManager>(context, listen: false)
+                    .resetShareLaunchProperties();
+
+                context.go('/baskit/$index');
+              },
+              child: Text(
+                baskitTitle,
+                style: TextStyle(fontSize: 23.0, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: GestureDetector(
+              onTap: () async {
+                // Add the item to the Baskit at this index
+                // Get the baskit at this index...
+                await baskitDBManager.addNewItemToBaskit(index);
+
+                // Reset the shared launch properties in app state manager
+                Provider.of<AppStateManager>(context, listen: false)
+                    .resetShareLaunchProperties();
+
+                context.go('/baskit/$index');
+              },
+              child: Image(
+                image: AssetImage('assets/basket.png'),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+                padding: EdgeInsets.only(right: 7.0),
+                alignment: Alignment.centerRight,
+                // TODO - put a row in here so that the area not the icon will
+                // TODO  bring to baskit screen
+                child: SizedBox(
+                  height: 5.0,
+                )),
+          )
+        ],
+      ),
+    );
   }
 }
 
