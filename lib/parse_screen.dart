@@ -471,7 +471,7 @@ class DetailsLoadingWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: 0.8,
+      opacity: 1.0,
       child: Container(
         color: Colors.white,
         child: Padding(
